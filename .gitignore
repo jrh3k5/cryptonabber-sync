@@ -22,3 +22,6 @@ go.work
 
 # Ignore local config
 config.yaml
+
+# Ignore distribution artifacts
+dist
