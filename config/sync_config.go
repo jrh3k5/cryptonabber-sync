@@ -22,15 +22,16 @@ func FromFile(fileLocation string) (*SyncConfig, error) {
 }
 
 type SyncConfig struct {
-	PersonalAccessToken string           `yaml:"ynab_pat"`
-	BudgetName          string           `yaml:"ynab_budget_name"`
-	Accounts            []*SyncedAccount `yaml:"ynab_accounts"`
+	BudgetName string           `yaml:"ynab_budget_name"`
+	Accounts   []*SyncedAccount `yaml:"ynab_accounts"`
 }
 
 type SyncedAccount struct {
-	AccountName   string `yaml:"account_name"`
-	WalletAddress string `yaml:"wallet_address"`
-	TokenAddress  string `yaml:"token_address"`
-	TokenDecimals int    `yaml:"token_decimals"`
-	RPCURL        string `yaml:"rpc_url"`
+	AccountName             string `yaml:"account_name"`
+	WalletAddress           string `yaml:"wallet_address"`
+	TokenAddress            string `yaml:"token_address"`
+	TokenDecimals           int    `yaml:"token_decimals"`
+	RPCURL                  string `yaml:"rpc_url"`
+	PayeeName               string `yaml:"payee_name"`
+	TransactionCategoryName string `yaml:"transaction_category_name"`
 }
