@@ -13,10 +13,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("EvmFetcher", func() {
+var _ = Describe("ERC20Fetcher", func() {
 	var balancesByContractAddress map[string]map[string]int64
 	var nodeURL string
-	var fetcher *balance.EVMFetcher
+	var fetcher *balance.ERC20Fetcher
 
 	var ctx context.Context
 
@@ -51,7 +51,7 @@ var _ = Describe("EvmFetcher", func() {
 			return httpmock.NewJsonResponse(http.StatusOK, response)
 		})
 
-		fetcher = balance.NewEVMFetcher(nodeURL, http.DefaultClient)
+		fetcher = balance.NewERC20Fetcher(nodeURL, http.DefaultClient)
 	})
 
 	It("fetches and retrieves the correct balance", func() {

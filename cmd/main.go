@@ -81,7 +81,7 @@ func main() {
 			panic(fmt.Sprintf("No category '%s' found in budget for account '%s'", account.TransactionCategoryName, account.AccountName))
 		}
 
-		balanceFetcher := balance.NewEVMFetcher(account.RPCURL, http.DefaultClient)
+		balanceFetcher := balance.NewERC20Fetcher(account.RPCURL, http.DefaultClient)
 		tokenBalance, err := balanceFetcher.FetchBalance(ctx, account.TokenAddress, account.WalletAddress)
 		if err != nil {
 			panic(fmt.Sprintf("failed to retrieve balance of token '%s' for address '%s': %v", account.TokenAddress, account.WalletAddress, err))
