@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -8,6 +9,13 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+)
+
+type AddressType string
+
+const (
+	AddressTypeERC20          AddressType = "erc20"
+	AddressTypeStakewiseVault AddressType = "stakewise_vault"
 )
 
 func FromFile(fileLocation string) (*SyncConfig, error) {
@@ -33,11 +41,21 @@ type SyncedAccount struct {
 	AccountName             string  `yaml:"account_name"`
 	WalletAddress           string  `yaml:"wallet_address"`
 	TokenAddress            string  `yaml:"token_address"`
-	TokenDecimals           int     `yaml:"token_decimals"`
+	TokenDecimals           *int    `yaml:"token_decimals"`
 	RPCURL                  string  `yaml:"rpc_url"`
 	PayeeName               string  `yaml:"payee_name"`
 	TransactionCategoryName string  `yaml:"transaction_category_name"`
 	Quote                   *string `yaml:"quote"`
+	AddressType             *string `yaml:"address_type"`
+}
+
+// GetAddressType gets the type of the address.
+func (s *SyncedAccount) GetAddressType() AddressType {
+	if s.AddressType == nil {
+		return AddressTypeERC20
+	}
+
+	return AddressType(*s.AddressType)
 }
 
 // GetQuote gets, if configurd, the quote to be used to estimate the fiat value of the asset.
@@ -68,6 +86,19 @@ func (s *SyncedAccount) GetQuote() (int64, float64, bool, error) {
 	centsRatio := float64(cents) / math.Pow10(len(centsString))
 
 	return dollars, centsRatio, true, nil
+}
+
+// GetTokenDecimals gets the token decimals for the asset to be matched in the account balance.
+func (s *SyncedAccount) GetTokenDecimals() (int, error) {
+	if s.TokenDecimals != nil {
+		return *s.TokenDecimals, nil
+	}
+
+	if s.GetAddressType() == AddressTypeStakewiseVault {
+		return 18, nil
+	}
+
+	return 0, errors.New("no decimals configured, and decimals cannot be inferred")
 }
 
 // HasQuote determines if this account has a quote value configured. It does not validate the configured value.

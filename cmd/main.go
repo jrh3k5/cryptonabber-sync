@@ -67,6 +67,11 @@ func main() {
 	accountChangeSummaries := make(map[string]*changeSummary)
 
 	for _, account := range syncConfig.Accounts {
+		tokenDecimals, err := account.GetTokenDecimals()
+		if err != nil {
+			panic(fmt.Sprintf("unable to fetch account's token decimals: %v", err))
+		}
+
 		var categoryID string
 		for _, categoryGroup := range categoryGroups {
 			for _, category := range categoryGroup.Categories {
@@ -81,7 +86,16 @@ func main() {
 			panic(fmt.Sprintf("No category '%s' found in budget for account '%s'", account.TransactionCategoryName, account.AccountName))
 		}
 
-		balanceFetcher := balance.NewERC20Fetcher(account.RPCURL, http.DefaultClient)
+		var balanceFetcher balance.Fetcher
+		switch account.GetAddressType() {
+		case config.AddressTypeERC20:
+			balanceFetcher = balance.NewERC20Fetcher(account.RPCURL, http.DefaultClient)
+		case config.AddressTypeStakewiseVault:
+			balanceFetcher = balance.NewStakewiseVaultFetcher(account.RPCURL, http.DefaultClient)
+		default:
+			panic(fmt.Sprintf("unhandled address type: %v", account.GetAddressType()))
+		}
+
 		tokenBalance, err := balanceFetcher.FetchBalance(ctx, account.TokenAddress, account.WalletAddress)
 		if err != nil {
 			panic(fmt.Sprintf("failed to retrieve balance of token '%s' for address '%s': %v", account.TokenAddress, account.WalletAddress, err))
@@ -106,17 +120,26 @@ func main() {
 				panic(fmt.Sprintf("failed to retrieve asset platform ID for account '%s': %v", account.AccountName, assetPlatformIDErr))
 			}
 
-			var hasQuote bool
-			var quoteErr error
-			dollarRate, centsRate, hasQuote, quoteErr = coingeckoQuoteResolver.ResolveQuote(ctx, assetPlatformID, account.TokenAddress)
-			if quoteErr != nil {
-				panic(fmt.Sprintf("failed to get quote for token address '%s': %v", account.TokenAddress, quoteErr))
-			} else if !hasQuote {
-				panic(fmt.Sprintf("unable to resolve a quote for token address '%s'; please configure one explicitly for the account", account.TokenAddress))
+			switch account.GetAddressType() {
+			case config.AddressTypeERC20:
+				var hasQuote bool
+				var quoteErr error
+				dollarRate, centsRate, hasQuote, quoteErr = coingeckoQuoteResolver.ResolveQuote(ctx, assetPlatformID, account.TokenAddress)
+				if quoteErr != nil {
+					panic(fmt.Sprintf("failed to get quote for token address '%s': %v", account.TokenAddress, quoteErr))
+				} else if !hasQuote {
+					panic(fmt.Sprintf("unable to resolve a quote for token address '%s'; please configure one explicitly for the account", account.TokenAddress))
+				}
+			case config.AddressTypeStakewiseVault:
+				var quoteErr error
+				dollarRate, centsRate, quoteErr = coingeckoQuoteResolver.ResolveETHQuote(ctx)
+				if quoteErr != nil {
+					panic(fmt.Sprintf("unable to resolve quote for ETH: %w", quoteErr))
+				}
 			}
 		}
 
-		currentBalance := balance.AsFiat(tokenBalance, account.TokenDecimals, dollarRate, centsRate) * 10 // YNAB stores cents as hundreds, not tens
+		currentBalance := balance.AsFiat(tokenBalance, tokenDecimals, dollarRate, centsRate) * 10 // YNAB stores cents as hundreds, not tens
 
 		ynabAccount, err := getAccount(account.AccountName, accounts)
 		if err != nil {
@@ -124,7 +147,7 @@ func main() {
 		}
 
 		if accountDiff := currentBalance - int64(ynabAccount.Balance); accountDiff != 0 {
-			updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), account.TokenDecimals, dollarRate, centsRate, accountDiff)
+			updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
 
 			accountDiffCents := accountDiff % 1000
 			accountDiffDollars := (accountDiff - accountDiffCents) / 1000

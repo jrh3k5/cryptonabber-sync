@@ -3,6 +3,7 @@ package coingecko
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -14,6 +15,12 @@ import (
 
 // QuoteResolver can be used to resolve quotes.
 type QuoteResolver interface {
+	// ResolveETHQuote resolves a quote for Ether.
+	// It returns dollars and cents. The cents is expressed as a floating value relative to whole dollars to account for assets that may
+	// have a value of less than 1 cent per whole token.
+	// This method enforces the assumption that there is always a price of ETH available.
+	ResolveETHQuote(ctx context.Context) (int64, float64, error)
+
 	// ResolveQuote resolves a quote for the given contract address on the given asset platform.
 	// It returns dollars and cents. The cents is expressed as a floating value relative to whole dollars to account for assets that may
 	// have a value of less than 1 cent per whole token.
@@ -30,6 +37,49 @@ func NewHTTPQuoteResolver(doer synchttp.Doer) *HTTPQuoteResolver {
 	return &HTTPQuoteResolver{
 		doer: doer,
 	}
+}
+
+func (q *HTTPQuoteResolver) ResolveETHQuote(ctx context.Context) (int64, float64, error) {
+	requestURL := "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false&precision=false"
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	response, err := q.doer.Do(request)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to execute request: %w", err)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		statusErr := synchttp.BuildUnexpectedStatusErr(response)
+		return 0, 0, statusErr
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	responseBody := make(map[string]map[string]json.Number)
+	if unmarshalErr := json.NewDecoder(response.Body).Decode(&responseBody); unmarshalErr != nil {
+		return 0, 0, fmt.Errorf("failed to unmarshal response body: %w", unmarshalErr)
+	}
+
+	ethereumPrices, hasEthereum := responseBody["ethereum"]
+	if !hasEthereum {
+		return 0, 0, errors.New("ethereum not returned in response")
+	}
+
+	usdPrice, hasUSD := ethereumPrices["usd"]
+	if !hasUSD {
+		return 0, 0, errors.New("USD price not found in Ethereum prices")
+	}
+
+	dollars, centsRatio, _, err := q.parsePrice(usdPrice)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to parse price: %w", err)
+	}
+
+	return dollars, centsRatio, nil
 }
 
 func (q *HTTPQuoteResolver) ResolveQuote(ctx context.Context, assetPlatformID string, contractAddress string) (int64, float64, bool, error) {
@@ -66,7 +116,11 @@ func (q *HTTPQuoteResolver) ResolveQuote(ctx context.Context, assetPlatformID st
 		return 0, 0, false, nil
 	}
 
-	usdPriceString := usdPrice.String()
+	return q.parsePrice(usdPrice)
+}
+
+func (*HTTPQuoteResolver) parsePrice(price json.Number) (int64, float64, bool, error) {
+	usdPriceString := price.String()
 	if usdPriceString == "" {
 		return 0, 0, false, nil
 	}
