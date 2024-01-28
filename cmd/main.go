@@ -134,7 +134,7 @@ func main() {
 				var quoteErr error
 				dollarRate, centsRate, quoteErr = coingeckoQuoteResolver.ResolveETHQuote(ctx)
 				if quoteErr != nil {
-					panic(fmt.Sprintf("unable to resolve quote for ETH: %w", quoteErr))
+					panic(fmt.Sprintf("unable to resolve quote for ETH: %v", quoteErr))
 				}
 			}
 		}
