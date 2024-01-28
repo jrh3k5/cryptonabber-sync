@@ -12,10 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// EVMFetcher is a Fetcher implementation for EVM chains.
 type EVMFetcher struct {
 	nodeURL string
 }
 
+// NewEVMFetcher builds an EVMFetcher instance that communicates with the given node URL.
 func NewEVMFetcher(nodeURL string) *EVMFetcher {
 	return &EVMFetcher{
 		nodeURL: nodeURL,
@@ -61,7 +63,7 @@ func (e *EVMFetcher) FetchBalance(ctx context.Context, tokenAddress string, wall
 		var bodyText string
 		bodyBytes, bodyBytesErr := io.ReadAll(io.LimitReader(response.Body, bodySampleLimit))
 		if bodyBytesErr != nil {
-			bodyText = fmt.Sprintf("failed to read request body: %w", bodyBytesErr)
+			bodyText = fmt.Sprintf("failed to read request body: %v", bodyBytesErr)
 		} else {
 			bodyText = string(bodyBytes)
 		}
