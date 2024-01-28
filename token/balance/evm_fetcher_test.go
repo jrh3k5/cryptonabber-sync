@@ -51,7 +51,7 @@ var _ = Describe("EvmFetcher", func() {
 			return httpmock.NewJsonResponse(http.StatusOK, response)
 		})
 
-		fetcher = balance.NewEVMFetcher(nodeURL)
+		fetcher = balance.NewEVMFetcher(nodeURL, http.DefaultClient)
 	})
 
 	It("fetches and retrieves the correct balance", func() {

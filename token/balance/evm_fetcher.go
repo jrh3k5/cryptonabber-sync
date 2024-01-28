@@ -6,18 +6,21 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
 	"github.com/jrh3k5/cryptonabber-sync/http/json/rpc"
 )
 
 // EVMFetcher is a Fetcher implementation for EVM chains.
 type EVMFetcher struct {
 	nodeURL string
+	doer    synchttp.Doer
 }
 
 // NewEVMFetcher builds an EVMFetcher instance that communicates with the given node URL.
-func NewEVMFetcher(nodeURL string) *EVMFetcher {
+func NewEVMFetcher(nodeURL string, doer synchttp.Doer) *EVMFetcher {
 	return &EVMFetcher{
 		nodeURL: nodeURL,
+		doer:    doer,
 	}
 }
 
@@ -37,7 +40,7 @@ func (e *EVMFetcher) FetchBalance(ctx context.Context, tokenAddress string, wall
 		},
 	}
 
-	result, err := rpc.ExecuteRequest(ctx, e.nodeURL, rpcRequest)
+	result, err := rpc.ExecuteRequest(ctx, e.doer, e.nodeURL, rpcRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
 	"github.com/jrh3k5/cryptonabber-sync/http/json/rpc"
 )
 
@@ -18,11 +19,13 @@ type ChainIDFetcher interface {
 // to determine it.
 type JSONRPCChainIDFetcher struct {
 	nodeURL string
+	doer    synchttp.Doer
 }
 
-func NewJSONRPCChainIDFetcher(nodeURL string) *JSONRPCChainIDFetcher {
+func NewJSONRPCChainIDFetcher(nodeURL string, doer synchttp.Doer) *JSONRPCChainIDFetcher {
 	return &JSONRPCChainIDFetcher{
 		nodeURL: nodeURL,
+		doer:    doer,
 	}
 }
 
@@ -33,7 +36,7 @@ func (j *JSONRPCChainIDFetcher) GetChainID(ctx context.Context) (*big.Int, error
 		Method:  "eth_chainId",
 	}
 
-	rpcResponse, err := rpc.ExecuteRequest(ctx, j.nodeURL, rpcRequest)
+	rpcResponse, err := rpc.ExecuteRequest(ctx, j.doer, j.nodeURL, rpcRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute eth_chainId: %w", err)
 	}

@@ -22,7 +22,7 @@ var _ = Describe("ChainID", func() {
 		ctx = context.Background()
 
 		nodeURL = "http://rpc.localhost/chain_id"
-		fetcher = evm.NewJSONRPCChainIDFetcher(nodeURL)
+		fetcher = evm.NewJSONRPCChainIDFetcher(nodeURL, http.DefaultClient)
 	})
 
 	It("returns the chain ID", func() {

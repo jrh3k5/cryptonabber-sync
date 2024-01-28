@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+
+	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
 )
 
 type Request struct {
@@ -27,7 +28,7 @@ type Response struct {
 }
 
 // ExecuteRequest executes the given RPC request and handles error checking.
-func ExecuteRequest(ctx context.Context, requestURL string, rpcRequest *Request) (*Response, error) {
+func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, rpcRequest *Request) (*Response, error) {
 	requestBodyBytes, err := json.Marshal(rpcRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON request body: %w", err)
@@ -38,7 +39,7 @@ func ExecuteRequest(ctx context.Context, requestURL string, rpcRequest *Request)
 		return nil, fmt.Errorf("failed to build request: %w", err)
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := doer.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -47,17 +48,8 @@ func ExecuteRequest(ctx context.Context, requestURL string, rpcRequest *Request)
 	}()
 
 	if response.StatusCode != http.StatusOK {
-		bodySampleLimit := int64(200)
-
-		var bodyText string
-		bodyBytes, bodyBytesErr := io.ReadAll(io.LimitReader(response.Body, bodySampleLimit))
-		if bodyBytesErr != nil {
-			bodyText = fmt.Sprintf("failed to read request body: %v", bodyBytesErr)
-		} else {
-			bodyText = string(bodyBytes)
-		}
-
-		return nil, fmt.Errorf("unexpected response status code (%d); first %d bytes of body are: '%s'", response.StatusCode, bodySampleLimit, bodyText)
+		statusErr := synchttp.BuildUnexpectedStatusErr(response)
+		return nil, statusErr
 	}
 
 	var result *Response
