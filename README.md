@@ -52,3 +52,22 @@ ynab_accounts:
 ```
 
 This will be the exchange rate used to determine the fiat value of the asset that is stored into YNAB.
+
+#### Token Type
+
+By default, all listed tokens are assumed to be ERC20 tokens. Their `balanceOf` methods will be used to determine the amount of token the wallet address has.
+
+However, not all onchain balances are ERC20 balances. This tool supports an optional `token_type` field on the configuration like so:
+
+```
+ynab_accounts:
+  - account_name: ...
+    address_type: "erc20"
+```
+
+The supported types are:
+
+* `erc20`: a token conforming to the ERC20 standard
+* `stakewise_vault`: a vault providing liquid staking options via Stakewise
+  * In this case, the `token_address` field should set to the contract address of the Vault's contract address - e.g., for the Gensis vault, use the address `0xAC0F906E433d58FA868F936E8A43230473652885`
+  * When this is used, then the resolved quote will be Ethereum's value. Decimals will be assumed to be 18 and do not need to be configured.
