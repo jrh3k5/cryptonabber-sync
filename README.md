@@ -23,6 +23,8 @@ To configure this tool, you must have obtained the following:
 * A [YNAB](https://ynab.com) account with a budget and accounts to set up
 * A [YNAB personal access token](https://api.ynab.com/#personal-access-tokens)
 
+### Configuration Parameters
+
 Your configuration file should have the following configuration:
 
 ```
@@ -37,6 +39,16 @@ ynab_accounts:
     transaction_category_name: "<the name of the budget category under which the transaction is to be classified>"
 ```
 
-Note that this only syncs the balances of the account to the balances of the configured token and _will not_ convert it to a fiat currency value.
+#### Fiat Value Evaluation
 
-Thus, this tool is best used to synchronize your accounts to a token that is pegged to the value of the account's fiat currency.
+This tool currently only supports conversion of asset values into USD.
+
+By default, this tool attempts to resolve an asset's quote from Coingecko. However, your asset may not exist in Coingecko, or it may have the incorrect value. To remedy that, you can provide an optional `quote` value like so:
+
+```
+ynab_accounts:
+  - account_name: ...
+    quote: "1.25"
+```
+
+This will be the exchange rate used to determine the fiat value of the asset that is stored into YNAB.
