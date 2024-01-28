@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/davidsteinsland/ynab-go/ynab"
+	"github.com/jrh3k5/cryptonabber-sync/coingecko"
 	"github.com/jrh3k5/cryptonabber-sync/config"
+	"github.com/jrh3k5/cryptonabber-sync/evm"
 	"github.com/jrh3k5/cryptonabber-sync/token/balance"
 )
 
@@ -59,6 +61,9 @@ func main() {
 		panic("no accounts found in budget")
 	}
 
+	coingeckoQuoteResolver := coingecko.NewHTTPQuoteResolver(http.DefaultClient)
+	assetPlatformIDResolver := coingecko.NewSimpleAssetPlatformIDResolver()
+
 	accountChangeSummaries := make(map[string]*changeSummary)
 
 	for _, account := range syncConfig.Accounts {
@@ -77,47 +82,59 @@ func main() {
 		}
 
 		balanceFetcher := balance.NewEVMFetcher(account.RPCURL, http.DefaultClient)
-		balance, err := balanceFetcher.FetchBalance(ctx, account.TokenAddress, account.WalletAddress)
+		tokenBalance, err := balanceFetcher.FetchBalance(ctx, account.TokenAddress, account.WalletAddress)
 		if err != nil {
 			panic(fmt.Sprintf("failed to retrieve balance of token '%s' for address '%s': %v", account.TokenAddress, account.WalletAddress, err))
 		}
 
-		tokenDecimals := account.TokenDecimals
+		var dollarRate int64
+		var centsRate float64
+		if account.HasQuote() {
+			var quoteErr error
+			dollarRate, centsRate, _, quoteErr = account.GetQuote()
+			if quoteErr != nil {
+				panic(fmt.Sprintf("failed to retrieve configured quote from account: %v", quoteErr))
+			}
+		} else {
+			chainID, chainIDErr := evm.NewJSONRPCChainIDFetcher(account.RPCURL, http.DefaultClient).GetChainID(ctx)
+			if chainIDErr != nil {
+				panic(fmt.Sprintf("failed to retrieve chain ID for account '%s': %v", account.AccountName, chainIDErr))
+			}
 
-		var dollars int64
-		var cents int64
-		switch tokenDecimals {
-		case 0:
-			dollars = balance.Int64()
-		default:
-			balanceInt := balance.Int64()
-			cents = balanceInt % int64(math.Pow10(tokenDecimals))
-			dollars = (balanceInt - cents) / int64(math.Pow10(tokenDecimals))
+			assetPlatformID, assetPlatformIDErr := assetPlatformIDResolver.ResolveForChainID(ctx, chainID)
+			if assetPlatformIDErr != nil {
+				panic(fmt.Sprintf("failed to retrieve asset platform ID for account '%s': %v", account.AccountName, assetPlatformIDErr))
+			}
 
-			if tokenDecimals > 2 {
-				centsDivisor := int64(math.Pow10(tokenDecimals - 2))
-				cents = (cents - (cents % int64(centsDivisor))) / centsDivisor
+			var hasQuote bool
+			var quoteErr error
+			dollarRate, centsRate, hasQuote, quoteErr = coingeckoQuoteResolver.ResolveQuote(ctx, assetPlatformID, account.TokenAddress)
+			if quoteErr != nil {
+				panic(fmt.Sprintf("failed to get quote for token address '%s': %v", account.TokenAddress, quoteErr))
+			} else if !hasQuote {
+				panic(fmt.Sprintf("unable to resolve a quote for token address '%s'; please configure one explicitly for the account", account.TokenAddress))
 			}
 		}
 
-		account, err := getAccount(account.AccountName, accounts)
+		currentBalance := balance.AsFiat(tokenBalance, account.TokenDecimals, dollarRate, centsRate) * 10 // YNAB stores cents as hundreds, not tens
+
+		ynabAccount, err := getAccount(account.AccountName, accounts)
 		if err != nil {
 			panic(fmt.Sprintf("failed to find account: %v", err))
 		}
 
-		currentBalance := (dollars * 1000) + (cents * 10) // YNAB stores cents as hundreds, not tens
-		if accountDiff := currentBalance - int64(account.Balance); accountDiff != 0 {
-			updateAccount(ynabClient, budget.Id, account.Id, categoryID, accountDiff)
+		if accountDiff := currentBalance - int64(ynabAccount.Balance); accountDiff != 0 {
+			updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), account.TokenDecimals, dollarRate, centsRate, accountDiff)
 
 			accountDiffCents := accountDiff % 1000
 			accountDiffDollars := (accountDiff - accountDiffCents) / 1000
 			accountDiffCents = (accountDiffCents - (accountDiffCents % 10)) / 10
-			accountChangeSummaries[account.Name] = &changeSummary{
+			accountChangeSummaries[ynabAccount.Name] = &changeSummary{
 				dollars: accountDiffDollars,
 				cents:   accountDiffCents,
 			}
 		} else {
-			accountChangeSummaries[account.Name] = &changeSummary{}
+			accountChangeSummaries[ynabAccount.Name] = &changeSummary{}
 		}
 
 	}
@@ -164,15 +181,22 @@ func getBudget(desiredBudgetName string, client *ynab.Client) (*ynab.BudgetSumma
 	return nil, fmt.Errorf("Budget '%s' not found; available budget(s) are: ['%s']", desiredBudgetName, strings.Join(budgetNames, "', '"))
 }
 
-func updateAccount(client *ynab.Client, budgetID string, accountID string, categoryID string, deltaDecicents int64) error {
+func updateAccount(client *ynab.Client, budgetID string, accountID string, categoryID string, tokenBalance int64, tokenDecimals int, dollarRate int64, centsRate float64, deltaDecicents int64) error {
 	dateString := time.Now().Format("2006-01-02")
+
+	tokenFractions := tokenBalance % int64(math.Pow10(tokenDecimals))
+	wholeTokens := (tokenBalance - tokenFractions) / int64(math.Pow10(tokenDecimals))
+	formattedTokenBalance := fmt.Sprintf("%d.%s", wholeTokens, fmt.Sprintf("%d", tokenFractions)[:2])
+	formattedRate := fmt.Sprintf("$%d.%s", dollarRate, fmt.Sprintf("%.2f", centsRate)[2:])
+	formattedTime := time.Now().Format("03:04 PM MST")
+
 	_, err := client.TransactionsService.Create(budgetID, &ynab.SaveTransaction{
 		AccountId:  accountID,
 		Date:       dateString,
 		Amount:     int(deltaDecicents),
 		PayeeName:  "Balance Adjustment",
 		CategoryId: categoryID,
-		Memo:       fmt.Sprintf("Balance adjustment executed %v", time.Now().Format(time.RFC3339)),
+		Memo:       fmt.Sprintf("%s @ %s (executed %v)", formattedTokenBalance, formattedRate, formattedTime),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create adjustment transaction: %w", err)
