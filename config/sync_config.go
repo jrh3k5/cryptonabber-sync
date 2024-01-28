@@ -2,7 +2,10 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"os"
+	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -27,11 +30,47 @@ type SyncConfig struct {
 }
 
 type SyncedAccount struct {
-	AccountName             string `yaml:"account_name"`
-	WalletAddress           string `yaml:"wallet_address"`
-	TokenAddress            string `yaml:"token_address"`
-	TokenDecimals           int    `yaml:"token_decimals"`
-	RPCURL                  string `yaml:"rpc_url"`
-	PayeeName               string `yaml:"payee_name"`
-	TransactionCategoryName string `yaml:"transaction_category_name"`
+	AccountName             string  `yaml:"account_name"`
+	WalletAddress           string  `yaml:"wallet_address"`
+	TokenAddress            string  `yaml:"token_address"`
+	TokenDecimals           int     `yaml:"token_decimals"`
+	RPCURL                  string  `yaml:"rpc_url"`
+	PayeeName               string  `yaml:"payee_name"`
+	TransactionCategoryName string  `yaml:"transaction_category_name"`
+	Quote                   *string `yaml:"quote"`
+}
+
+// GetQuote gets, if configurd, the quote to be used to estimate the fiat value of the asset.
+// The cents are returned as a ratio of cents to whole dollars to allow for assets that are worth
+// less than 1 cent per whole token.
+func (s *SyncedAccount) GetQuote() (int64, float64, bool, error) {
+	if !s.HasQuote() {
+		return 0, 0, false, nil
+	}
+
+	quoteStr := *s.Quote
+	splitQuote := strings.Split(quoteStr, ".")
+	dollars, parseErr := strconv.ParseInt(splitQuote[0], 10, 64)
+	if parseErr != nil {
+		return 0, 0, false, fmt.Errorf("failed to parse dollar value ('%s') of quote: %w", splitQuote[0], parseErr)
+	}
+
+	if len(splitQuote) == 1 {
+		return dollars, 0, true, nil
+	}
+
+	centsString := splitQuote[1]
+	cents, parseErr := strconv.ParseInt(centsString, 10, 64)
+	if parseErr != nil {
+		return 0, 0, false, fmt.Errorf("failed to parse cents value ('%s') of quote: %q", splitQuote[1], parseErr)
+	}
+
+	centsRatio := float64(cents) / math.Pow10(len(centsString))
+
+	return dollars, centsRatio, true, nil
+}
+
+// HasQuote determines if this account has a quote value configured. It does not validate the configured value.
+func (s *SyncedAccount) HasQuote() bool {
+	return s.Quote != nil && *s.Quote != ""
 }

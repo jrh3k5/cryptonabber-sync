@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,9 +15,10 @@ import (
 // QuoteResolver can be used to resolve quotes.
 type QuoteResolver interface {
 	// ResolveQuote resolves a quote for the given contract address on the given asset platform.
-	// It returns dollars and cents. The cents may not be whole cents (e.g., a quote of 102.43789473 will have cents of 43789473).
+	// It returns dollars and cents. The cents is expressed as a floating value relative to whole dollars to account for assets that may
+	// have a value of less than 1 cent per whole token.
 	// The returned bool is true if a quote was found; false if not.
-	ResolveQuote(ctx context.Context, assetPlatformID string, contractAddress string) (int64, int64, bool, error)
+	ResolveQuote(ctx context.Context, assetPlatformID string, contractAddress string) (int64, float64, bool, error)
 }
 
 // HTTPQuoteResolver is a QuoteResolver that uses Coingecko's HTTP API to resolve quotes.
@@ -30,7 +32,7 @@ func NewHTTPQuoteResolver(doer synchttp.Doer) *HTTPQuoteResolver {
 	}
 }
 
-func (q *HTTPQuoteResolver) ResolveQuote(ctx context.Context, assetPlatformID string, contractAddress string) (int64, int64, bool, error) {
+func (q *HTTPQuoteResolver) ResolveQuote(ctx context.Context, assetPlatformID string, contractAddress string) (int64, float64, bool, error) {
 	requestURL := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s/contract/%s", assetPlatformID, contractAddress)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 	if err != nil {
@@ -79,12 +81,15 @@ func (q *HTTPQuoteResolver) ResolveQuote(ctx context.Context, assetPlatformID st
 		return dollars, 0, true, nil
 	}
 
-	cents, parseErr := strconv.ParseInt(splitUSD[1], 10, 64)
+	centsString := splitUSD[1]
+	cents, parseErr := strconv.ParseInt(centsString, 10, 64)
 	if parseErr != nil {
 		return 0, 0, false, fmt.Errorf("failed to parse USD cents '%s': %w", splitUSD[1], parseErr)
 	}
 
-	return dollars, cents, true, nil
+	centsRatio := float64(cents) / math.Pow10(len(centsString))
+
+	return dollars, centsRatio, true, nil
 }
 
 type coinDetailsResponse struct {
