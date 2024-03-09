@@ -23,7 +23,7 @@ func NewERC20Fetcher(nodeURL string, doer synchttp.Doer) *ERC20Fetcher {
 }
 
 func (e *ERC20Fetcher) FetchBalance(ctx context.Context, tokenAddress string, walletAddress string) (*big.Int, error) {
-	result, err := executeEthCall(ctx, e.doer, e.nodeURL, "balanceOf", tokenAddress, walletAddress)
+	result, err := executeEthCallAddress(ctx, e.doer, e.nodeURL, "balanceOf", tokenAddress, walletAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute balanceOf: %w", err)
 	}
