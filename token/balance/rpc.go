@@ -38,7 +38,7 @@ func executeEthCallAddress(ctx context.Context, doer synchttp.Doer, nodeURL stri
 // executeEthCallUint256 calls the given method, supplying the given input as uin256 input. The method called is assumed
 // to return a value.
 func executeEthCallUint256(ctx context.Context, doer synchttp.Doer, nodeURL string, methodName string, contractAddress string, input int64) (string, error) {
-	data := crypto.Keccak256Hash([]byte(methodName + "(uint256)")).String()[0:10] + "000000000000000000000000" + fmt.Sprintf("%048x", input)
+	data := crypto.Keccak256Hash([]byte(methodName + "(uint256)")).String()[0:10] + "000000000000000000000000" + fmt.Sprintf("%040x", input)
 
 	rpcRequest := &rpc.Request{
 		ID:      1,
