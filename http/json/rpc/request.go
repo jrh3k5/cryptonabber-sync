@@ -34,6 +34,9 @@ func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, 
 		return nil, fmt.Errorf("failed to marshal JSON request body: %w", err)
 	}
 
+	// TODO: remove
+	fmt.Printf("sending request body: %v\n", string(requestBodyBytes))
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("failed to build request: %w", err)

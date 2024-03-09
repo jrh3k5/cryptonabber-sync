@@ -22,12 +22,21 @@ func NewStakewiseVaultFetcher(nodeURL string, doer synchttp.Doer) *StakewiseVaul
 }
 
 func (s *StakewiseVaultFetcher) FetchBalance(ctx context.Context, tokenAddress string, walletAddress string) (*big.Int, error) {
-	result, err := executeEthCall(ctx, s.doer, s.nodeURL, "getShares", tokenAddress, walletAddress)
+	sharesResult, err := executeEthCallAddress(ctx, s.doer, s.nodeURL, "getShares", tokenAddress, walletAddress)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute balanceOf: %w", err)
+		return nil, fmt.Errorf("failed to execute getShares: %w", err)
 	}
 
-	balance := big.NewInt(0)
-	balance.SetString(result[2:], 16)
-	return balance, nil
+	sharesBalance := big.NewInt(0)
+	sharesBalance.SetString(sharesResult[2:], 16)
+
+	assetsResult, err := executeEthCallUint256(ctx, s.doer, s.nodeURL, "convertToAssets", tokenAddress, sharesBalance.Int64())
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute convertToAssets: %w", err)
+	}
+
+	assetsBalance := big.NewInt(0)
+	assetsBalance.SetString(assetsResult[2:], 16)
+
+	return assetsBalance, nil
 }
