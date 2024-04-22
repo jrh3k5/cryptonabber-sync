@@ -4,7 +4,7 @@ go 1.21.3
 
 require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
