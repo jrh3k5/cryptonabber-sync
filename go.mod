@@ -6,7 +6,7 @@ require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
 	github.com/ethereum/go-ethereum v1.14.0
 	github.com/jarcoal/httpmock v1.3.1
-	github.com/onsi/ginkgo/v2 v2.17.2
+	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
 	gopkg.in/yaml.v3 v3.0.1
 )
