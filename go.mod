@@ -1,7 +1,8 @@
 module github.com/jrh3k5/cryptonabber-sync
 
-go 1.21.3
-toolchain go1.22.5
+go 1.22.0
+
+toolchain go1.23.3
 
 require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
