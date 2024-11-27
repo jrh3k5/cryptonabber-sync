@@ -9,7 +9,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/onsi/ginkgo/v2 v2.22.0
-	github.com/onsi/gomega v1.34.2
+	github.com/onsi/gomega v1.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
