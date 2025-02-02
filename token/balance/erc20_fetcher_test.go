@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/jrh3k5/cryptonabber-sync/http/json/rpc"
-	"github.com/jrh3k5/cryptonabber-sync/token/balance"
+	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v2/token/balance"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

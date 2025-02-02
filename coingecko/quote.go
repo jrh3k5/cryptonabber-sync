@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 )
 
 // QuoteResolver can be used to resolve quotes.

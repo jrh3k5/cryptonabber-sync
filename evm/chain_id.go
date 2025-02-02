@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math/big"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
-	"github.com/jrh3k5/cryptonabber-sync/http/json/rpc"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
+	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
 )
 
 // ChainIDFetcher describes a means of retrieving a chain ID.
