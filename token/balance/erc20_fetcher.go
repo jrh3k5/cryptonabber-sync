@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 )
 
 // ERC20Fetcher is a Fetcher implementation for EVM chains.

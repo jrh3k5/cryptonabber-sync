@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/jrh3k5/cryptonabber-sync/config"
+	"github.com/jrh3k5/cryptonabber-sync/v2/config"
 )
 
 var _ = Describe("SyncConfig", func() {

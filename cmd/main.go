@@ -3,32 +3,34 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"math"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/davidsteinsland/ynab-go/ynab"
-	"github.com/jrh3k5/cryptonabber-sync/coingecko"
-	"github.com/jrh3k5/cryptonabber-sync/config"
-	"github.com/jrh3k5/cryptonabber-sync/evm"
-	"github.com/jrh3k5/cryptonabber-sync/token/balance"
+	"github.com/jrh3k5/cryptonabber-sync/v2/coingecko"
+	"github.com/jrh3k5/cryptonabber-sync/v2/config"
+	"github.com/jrh3k5/cryptonabber-sync/v2/evm"
+	"github.com/jrh3k5/cryptonabber-sync/v2/token/balance"
+	"github.com/jrh3k5/oauth-cli/pkg/auth"
 )
 
 func main() {
 	ctx := context.Background()
 
-	var accessToken string
-	flag.StringVar(&accessToken, "access-token", "", "the personal access token to be used to communicate with YNAB")
+	oauthToken, err := auth.DefaultGetOAuthToken(ctx,
+		"https://app.ynab.com/oauth/authorize",
+		"https://api.ynab.com/oauth/token")
+	if err != nil {
+		panic(fmt.Sprintf("failed to get OAuth token: %v", err))
+	}
 
-	var configFileLocation string
-	flag.StringVar(&configFileLocation, "file", "", "the location of the file to be read in for configuration")
-
-	flag.Parse()
+	configFileLocation := getConfigFile()
 
 	fmt.Printf("Reading configuration from '%s'\n", configFileLocation)
 
@@ -42,7 +44,7 @@ func main() {
 		// ??? how?
 		panic(fmt.Sprintf("unable to parse hard-coded YNAB URL: %v", err))
 	}
-	ynabClient := ynab.NewClient(ynabURL, http.DefaultClient, accessToken)
+	ynabClient := ynab.NewClient(ynabURL, http.DefaultClient, oauthToken.AccessToken)
 
 	budget, err := getBudget(syncConfig.BudgetName, ynabClient)
 	if err != nil {
@@ -202,6 +204,16 @@ func getBudget(desiredBudgetName string, client *ynab.Client) (*ynab.BudgetSumma
 	}
 
 	return nil, fmt.Errorf("Budget '%s' not found; available budget(s) are: ['%s']", desiredBudgetName, strings.Join(budgetNames, "', '"))
+}
+
+func getConfigFile() string {
+	for _, osArg := range os.Args {
+		if strings.HasPrefix(osArg, "--file=") {
+			return strings.TrimPrefix(osArg, "--file=")
+		}
+	}
+
+	return "config.yaml"
 }
 
 func updateAccount(client *ynab.Client, budgetID string, accountID string, categoryID string, tokenBalance int64, tokenDecimals int, dollarRate int64, centsRate float64, deltaDecicents int64) error {

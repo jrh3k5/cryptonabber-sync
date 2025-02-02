@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
-	"github.com/jrh3k5/cryptonabber-sync/http/json/rpc"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
+	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
 )
 
 // executeEthCallAddress calls the given method (assuming to accept a single address - the given wallet address) against

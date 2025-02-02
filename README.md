@@ -3,27 +3,32 @@ A utility used to synchronize YNAB account balances to token balances
 
 ## Usage
 
-Execute the compiled binary with two parameters:
-
-* `--access-token`: the YNAB personal access token to be used to communicate with YNAB
-* `--file`: the location of the configuration file the app should use
-
-Example:
-
-```
-/cryptonabber-sync --access-token=FAKE507c706 --file="nabber.yaml"
-```
-
-## Configuration
-
 ### Prerequisites
 
-To configure this tool, you must have obtained the following:
+* You must have a [YNAB](https://ynab.com) account with a budget and accounts to set up
+* You must have a registered OAuth client ID and secret as described [here](https://api.ynab.com/#oauth-applications).
 
-* A [YNAB](https://ynab.com) account with a budget and accounts to set up
-* A [YNAB personal access token](https://api.ynab.com/#personal-access-tokens)
+### Executing the Program
 
-### Configuration Parameters
+You can either supply the OAuth credentials interactively by executing this application as:
+
+```
+/cryptonabber-sync --interactive
+```
+
+...or you can supply the OAuth credentials non-interactively by executing this application as:
+
+```
+/cryptonabber-sync --oauth-client-id=<client ID> --oauth-client-secret=<client secret>
+```
+
+You can provide the following optional arguments:
+
+* `--file`: by default, this application looks for a file called `config.yaml` in the local directory; if you would like to use a different filename or location, you can use this parameter to specify that
+
+### Configuration
+
+#### Configuration File Format
 
 Your configuration file should have the following configuration:
 
@@ -39,7 +44,7 @@ ynab_accounts:
     transaction_category_name: "<the name of the budget category under which the transaction is to be classified>"
 ```
 
-#### Fiat Value Evaluation
+##### Fiat Value Evaluation
 
 This tool currently only supports conversion of asset values into USD.
 
@@ -53,7 +58,7 @@ ynab_accounts:
 
 This will be the exchange rate used to determine the fiat value of the asset that is stored into YNAB.
 
-#### Token Type
+##### Token Type
 
 By default, all listed tokens are assumed to be ERC20 tokens. Their `balanceOf` methods will be used to determine the amount of token the wallet address has.
 

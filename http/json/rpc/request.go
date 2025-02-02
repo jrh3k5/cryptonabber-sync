@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/http"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 )
 
 type Request struct {
