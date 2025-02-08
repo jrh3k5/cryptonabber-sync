@@ -6,13 +6,28 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/jarcoal/httpmock"
+	"github.com/jrh3k5/cryptonabber-sync/v2/config/chain"
+	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
 )
+
+var evmNode *rpc.MockEVMNode
+var rpcConfigurationResolver rpcconfig.ConfigurationResolver
+var chainName = "ethereum"
 
 func TestBalance(t *testing.T) {
 	BeforeSuite(func() {
-		httpmock.Activate()
-		DeferCleanup(httpmock.DeactivateAndReset)
+		evmNode = rpc.StartMockEVMNode()
+
+		rpcConfigurationResolver = rpcconfig.NewDefaultConfigurationResolver([]rpcconfig.Configuration{
+			{
+				RPCURL:    evmNode.URL(),
+				ChainName: chainName,
+				ChainType: chain.TypeEVM,
+			},
+		})
+
+		DeferCleanup(evmNode.Stop)
 	})
 
 	RegisterFailHandler(Fail)

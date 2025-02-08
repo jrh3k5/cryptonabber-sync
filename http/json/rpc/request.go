@@ -18,13 +18,15 @@ type Request struct {
 }
 
 type Response struct {
-	ID      json.Number `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  string      `json:"result"`
-	Error   struct {
-		Code    int64  `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+	ID      json.Number   `json:"id"`
+	JSONRPC string        `json:"jsonrpc"`
+	Result  string        `json:"result"`
+	Error   ResponseError `json:"error"`
+}
+
+type ResponseError struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
 // ExecuteRequest executes the given RPC request and handles error checking.
