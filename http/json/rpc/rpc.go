@@ -2,43 +2,60 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 )
 
-// ExecuteEthCallAddress calls the given method (assuming to accept a single address - the given wallet address) against
-// the given contract address.
-func ExecuteEthCallAddress(ctx context.Context, doer synchttp.Doer, nodeURL string, methodName string, contractAddress string, walletAddress string) (string, error) {
-	data := crypto.Keccak256Hash([]byte(methodName + "(address)")).String()[0:10] + "000000000000000000000000" + walletAddress[2:]
-
-	rpcRequest := &Request{
-		ID:      1,
-		JSONRPC: "2.0",
-		Method:  "eth_call",
-		Params: []any{
-			map[string]string{
-				"to":   contractAddress,
-				"data": data,
-			},
-			"latest",
-		},
-	}
-
-	result, err := ExecuteRequest(ctx, doer, nodeURL, rpcRequest)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute request: %w", err)
-	}
-
-	return result.Result, nil
+type EthCallArgument struct {
+	Type  string
+	Value any
 }
 
-// ExecuteEthCallUint256 calls the given method, supplying the given input as uin256 input. The method called is assumed
-// to return a value.
-func ExecuteEthCallUint256(ctx context.Context, doer synchttp.Doer, nodeURL string, methodName string, contractAddress string, input *big.Int) (string, error) {
-	data := crypto.Keccak256Hash([]byte(methodName + "(uint256)")).String()[0:10] + "000000000000000000000000" + fmt.Sprintf("%040x", input)
+func Arg(argType string, v any) *EthCallArgument {
+	return &EthCallArgument{
+		Type:  argType,
+		Value: v,
+	}
+}
+
+// ExecuteEthCallNoArg calls the given method (assuming to accept no arguments) against the given contract address.
+func ExecuteEthCall(
+	ctx context.Context,
+	doer synchttp.Doer,
+	nodeURL string,
+	methodName string,
+	contractAddress string,
+	args ...*EthCallArgument,
+) (string, error) {
+	if len(args) > 1 {
+		return "", errors.New("only one argument is supported for eth_call calls")
+	}
+
+	argTypes := make([]string, len(args))
+	argValues := make([]string, len(args))
+
+	for i, arg := range args {
+		argTypes[i] = arg.Type
+		switch v := arg.Value.(type) {
+		case string:
+			if argTypes[i] != "address" {
+				return "", errors.New("only address arguments are supported for eth_call string parameters")
+			}
+			argValues[i] = v[2:]
+		case *big.Int:
+			argValues[i] = fmt.Sprintf("%040x", v)
+		}
+	}
+
+	data := crypto.Keccak256Hash([]byte(methodName + "(" + strings.Join(argTypes, ",") + ")")).String()[0:10]
+	if len(args) > 0 {
+		data += "000000000000000000000000" + argValues[0]
+	}
 
 	rpcRequest := &Request{
 		ID:      1,

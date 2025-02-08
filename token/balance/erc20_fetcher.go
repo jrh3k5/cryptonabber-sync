@@ -10,6 +10,7 @@ import (
 	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
 	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v2/token"
 )
 
 // ERC20Fetcher is a Fetcher implementation for EVM chains.
@@ -27,12 +28,12 @@ func NewERC20Fetcher(rpcConfigurationResolver rpcconfig.ConfigurationResolver, d
 }
 
 func (e *ERC20Fetcher) FetchBalance(ctx context.Context, onchainAccount *config.ERC20Account) (*big.Int, error) {
-	rpcURL, err := resolveRPCURL(ctx, e.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
+	rpcURL, err := token.ResolveRPCURL(ctx, e.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve RPC URL: %w", err)
 	}
 
-	result, err := rpc.ExecuteEthCallAddress(ctx, e.doer, rpcURL, "balanceOf", onchainAccount.TokenAddress, onchainAccount.WalletAddress)
+	result, err := rpc.ExecuteEthCall(ctx, e.doer, rpcURL, "balanceOf", onchainAccount.TokenAddress, rpc.Arg("address", onchainAccount.WalletAddress))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute balanceOf: %w", err)
 	}

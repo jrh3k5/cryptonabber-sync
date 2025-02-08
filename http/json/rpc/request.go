@@ -29,7 +29,24 @@ type ResponseError struct {
 	Message string `json:"message"`
 }
 
+type RPCCallError struct {
+	Code    int64
+	Message string
+}
+
+func NewRPCCallError(code int64, message string) *RPCCallError {
+	return &RPCCallError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func (e *RPCCallError) Error() string {
+	return fmt.Sprintf("RPC error: code %d, message: '%s'", e.Code, e.Message)
+}
+
 // ExecuteRequest executes the given RPC request and handles error checking.
+// This can return RPCCallError if the RPC call returned an error in the JSON response.
 func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, rpcRequest *Request) (*Response, error) {
 	requestBodyBytes, err := json.Marshal(rpcRequest)
 	if err != nil {
@@ -60,7 +77,7 @@ func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, 
 	}
 
 	if result.Error.Code != 0 {
-		return nil, fmt.Errorf("RPC error: code %d, message: '%s'", result.Error.Code, result.Error.Message)
+		return nil, NewRPCCallError(result.Error.Code, result.Error.Message)
 	}
 
 	return result, nil

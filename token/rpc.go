@@ -1,4 +1,4 @@
-package balance
+package token
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
 )
 
-// resolveRPCURL resolves the RPC URL for the given chain name.
-func resolveRPCURL(ctx context.Context, configurationResolver rpc.ConfigurationResolver, onchainAsset config.OnchainAsset, requiredChainType chain.Type) (string, error) {
+// ResolveRPCURL resolves the RPC URL for the given chain name.
+func ResolveRPCURL(ctx context.Context, configurationResolver rpc.ConfigurationResolver, onchainAsset config.OnchainAsset, requiredChainType chain.Type) (string, error) {
 	if onchainAsset.ChainName == "" {
 		return "", fmt.Errorf("chain name is required")
 	}

@@ -32,44 +32,46 @@ func StartMockEVMNode() *MockEVMNode {
 	httpmock.RegisterResponder(http.MethodPost, evmNode.URL(), func(request *http.Request) (*http.Response, error) {
 		requestBody := &Request{}
 		if unmarshalErr := json.NewDecoder(request.Body).Decode(requestBody); unmarshalErr != nil {
-			responseErr := fmt.Errorf("failed to unmarshal request body: %w", unmarshalErr)
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return nil, fmt.Errorf("failed to unmarshal request body: %w", unmarshalErr)
 		}
 
 		if requestBody.Method != "eth_call" {
-			responseErr := fmt.Errorf("unexpected request method: %s", requestBody.Method)
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return nil, fmt.Errorf("unexpected request method: %s", requestBody.Method)
 		}
 
 		if len(requestBody.Params) != 2 {
-			responseErr := fmt.Errorf("unexpected number of request parameters: %d", len(requestBody.Params))
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return nil, fmt.Errorf("unexpected number of request parameters: %d", len(requestBody.Params))
 		}
 
 		funcArgs := requestBody.Params[0].(map[string]any)
 		targetAddress, targetAddressIsString := funcArgs["to"].(string)
 		if !targetAddressIsString {
-			responseErr := fmt.Errorf("unexpected request parameter type: %T", funcArgs["to"])
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return nil, fmt.Errorf("unexpected request parameter type: %T", funcArgs["to"])
 		}
 
 		contractHandlers, hasContract := evmNode.handlers[targetAddress]
 		if !hasContract {
-			responseErr := fmt.Errorf("unexpected contract address: %s", targetAddress)
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return httpmock.NewJsonResponse(http.StatusOK, &Response{
+				ID:      json.Number(fmt.Sprintf("%d", requestBody.ID)),
+				JSONRPC: "2.0",
+				Result:  "0x",
+			})
 		}
 
 		data, dataIsString := funcArgs["data"].(string)
 		if !dataIsString {
-			responseErr := fmt.Errorf("unexpected request parameter type: %T", funcArgs["data"])
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			return nil, fmt.Errorf("unexpected request parameter type: %T", funcArgs["data"])
 		}
 
 		functionSelector := data[0:10]
 		handler, hasHandler := contractHandlers[functionSelector]
 		if !hasHandler {
-			responseErr := fmt.Errorf("unexpected function selector: %s", data[0:lengthFunctionSelector])
-			return httpmock.NewStringResponse(http.StatusInternalServerError, responseErr.Error()), responseErr
+			// simulate a lack of the function being defined
+			return httpmock.NewJsonResponse(http.StatusOK, &Response{
+				ID:      json.Number(fmt.Sprintf("%d", requestBody.ID)),
+				JSONRPC: "2.0",
+				Error:   ResponseError{Code: -32000, Message: "execution reverted"},
+			})
 		}
 
 		// It's a no-arg call
@@ -108,6 +110,10 @@ func StartMockEVMNode() *MockEVMNode {
 	})
 
 	return evmNode
+}
+
+func (m *MockEVMNode) RegisterContractExistence(address string) {
+	m.handlers[address] = make(map[string]MockEVMNodeCallHandler)
 }
 
 func (m *MockEVMNode) RegisterFunctionCall(

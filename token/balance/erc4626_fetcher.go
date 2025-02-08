@@ -10,6 +10,7 @@ import (
 	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
 	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
 	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v2/token"
 )
 
 type ERC4262Fetcher struct {
@@ -25,12 +26,12 @@ func NewERC4262Fetcher(rpcConfigurationResolver rpcconfig.ConfigurationResolver,
 }
 
 func (e *ERC4262Fetcher) FetchBalance(ctx context.Context, onchainAccount *config.ERC4626Account) (*big.Int, error) {
-	rpcNodeURL, err := resolveRPCURL(ctx, e.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
+	rpcNodeURL, err := token.ResolveRPCURL(ctx, e.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve RPC URL: %w", err)
 	}
 
-	sharesResult, err := rpc.ExecuteEthCallAddress(ctx, e.doer, rpcNodeURL, "getShares", onchainAccount.VaultAddress, onchainAccount.WalletAddress)
+	sharesResult, err := rpc.ExecuteEthCall(ctx, e.doer, rpcNodeURL, "getShares", onchainAccount.VaultAddress, rpc.Arg("address", onchainAccount.WalletAddress))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute getShares: %w", err)
 	}
@@ -42,7 +43,7 @@ func (e *ERC4262Fetcher) FetchBalance(ctx context.Context, onchainAccount *confi
 
 	fmt.Printf("sharesBalance: %v\n", sharesBalance.Text(10))
 
-	assetsResult, err := rpc.ExecuteEthCallUint256(ctx, e.doer, rpcNodeURL, "convertToAssets", onchainAccount.VaultAddress, sharesBalance)
+	assetsResult, err := rpc.ExecuteEthCall(ctx, e.doer, rpcNodeURL, "convertToAssets", onchainAccount.VaultAddress, rpc.Arg("uint256", sharesBalance))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute convertToAssets: %w", err)
 	}
