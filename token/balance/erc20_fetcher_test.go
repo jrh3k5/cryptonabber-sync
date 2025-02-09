@@ -30,7 +30,7 @@ var _ = Describe("ERC20Fetcher", func() {
 		walletAddress := "0x2870d53DcAc4763D6b0C030fbE0555405B09CDb3"
 		balance := big.NewInt(478932974)
 
-		evmNode.RegisterFunctionCall("balanceOf", contractAddress, []string{"address"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+		evmNode.RegisterETHCallCall("balanceOf", contractAddress, []string{"address"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 			if len(params) != 1 {
 				return nil, nil, fmt.Errorf("expected 1 parameter, got %d: %s", len(params), strings.Join(params, ", "))
 			}

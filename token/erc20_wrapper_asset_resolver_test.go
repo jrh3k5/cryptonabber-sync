@@ -29,7 +29,7 @@ var _ = Describe("ERC20WrapperAssetResolver", func() {
 			baseTokenAddress := "0x388C818CA8B9251b393131C08a736A67ccB19297"
 			baseTokenFunction := "baseToken"
 
-			evmNode.RegisterFunctionCall(baseTokenFunction, tokenAddress, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+			evmNode.RegisterETHCallCall(baseTokenFunction, tokenAddress, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 				return rpc.NewMockEVMNodeRPCAddressResult(baseTokenAddress), nil, nil
 			})
 

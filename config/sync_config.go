@@ -9,14 +9,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// AddressType is the type of an address
 type AddressType string
 
+// AccountProperties is the configuration for an account
 type AccountProperties map[string]any
 
 const (
-	AddressTypeERC20    AddressType = "erc20"         // describes an ERC20 token
-	AddressTypeERC4626  AddressType = "erc4626"       // describes an ERC4626 vault
-	AddressTypeCompound AddressType = "erc20_wrapper" // describes an ERC20 wrapper
+	AddressTypeERC20        AddressType = "erc20"         // describes an ERC20 token
+	AddressTypeERC4626      AddressType = "erc4626"       // describes an ERC4626 vault
+	AddressTypeERC20Wrapper AddressType = "erc20_wrapper" // describes an ERC20 wrapper
 
 	fieldAccountName             = "account_name"
 	fieldAddressType             = "address_type"
@@ -145,7 +147,7 @@ func (a AccountProperties) AsERC20WrapperAccount() (*ERC20WrapperAccount, error)
 	addressType, err := a.GetAddressType()
 	if err != nil {
 		return nil, err
-	} else if addressType != AddressTypeCompound {
+	} else if addressType != AddressTypeERC20Wrapper {
 		return nil, fmt.Errorf("invalid address type: %s", addressType)
 	}
 
@@ -180,6 +182,7 @@ func (a AccountProperties) asOnchainAsset() (*OnchainAsset, error) {
 	}, nil
 }
 
+// asSyncableAccount resolves the account properties into a syncable account
 func (a AccountProperties) asSyncableAccount() (*SyncableAccount, error) {
 	accountName, hasAccountName, err := a.stringProperty(fieldAccountName)
 	if err != nil {

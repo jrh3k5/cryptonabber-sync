@@ -34,7 +34,7 @@ var _ = Describe("Erc4626Fetcher", func() {
 			walletAddress := "0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97"
 			vaultAddress := "0x192850F437160A09A48a056Df3C2dacc68769d34"
 
-			evmNode.RegisterFunctionCall("getShares", vaultAddress, []string{"address"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+			evmNode.RegisterETHCallCall("getShares", vaultAddress, []string{"address"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 				if len(params) != 1 {
 					return nil, nil, fmt.Errorf("expected 1 parameter, got %d", len(params))
 				}
@@ -47,7 +47,7 @@ var _ = Describe("Erc4626Fetcher", func() {
 				return rpc.NewMockEVMNodeRPCNumericResult(sharesBalance), nil, nil
 			})
 
-			evmNode.RegisterFunctionCall("convertToAssets", vaultAddress, []string{"uint256"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+			evmNode.RegisterETHCallCall("convertToAssets", vaultAddress, []string{"uint256"}, func(_ string, params []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 				if len(params) != 1 {
 					return nil, nil, fmt.Errorf("expected 1 parameter, got %d", len(params))
 				}

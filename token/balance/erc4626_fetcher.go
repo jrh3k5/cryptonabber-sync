@@ -36,24 +36,16 @@ func (e *ERC4262Fetcher) FetchBalance(ctx context.Context, onchainAccount *confi
 		return nil, fmt.Errorf("failed to execute getShares: %w", err)
 	}
 
-	fmt.Printf("shares: %s\n", sharesResult)
-
 	sharesBalance := big.NewInt(0)
 	sharesBalance.SetString(sharesResult[2:], 16)
-
-	fmt.Printf("sharesBalance: %v\n", sharesBalance.Text(10))
 
 	assetsResult, err := rpc.ExecuteEthCall(ctx, e.doer, rpcNodeURL, "convertToAssets", onchainAccount.VaultAddress, rpc.Arg("uint256", sharesBalance))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute convertToAssets: %w", err)
 	}
 
-	fmt.Printf("assets: %s\n", assetsResult)
-
 	assetsBalance := big.NewInt(0)
 	assetsBalance.SetString(assetsResult[2:], 16)
-
-	fmt.Printf("assetsBalance: %v\n", assetsBalance.Text(10))
 
 	return assetsBalance, nil
 }

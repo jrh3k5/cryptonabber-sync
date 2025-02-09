@@ -27,7 +27,7 @@ var _ = Describe("ERC4626AssetResolver", func() {
 		It("returns the address of the asset", func() {
 			vaultAddres := "0x68d30f47F19c07bCCEf4Ac7FAE2Dc12FCa3e0dC9"
 			assetAddress := "0x4838B106FCe9647Bdf1E7877BF73cE8B0BAD5f97"
-			evmNode.RegisterFunctionCall("asset", vaultAddres, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+			evmNode.RegisterETHCallCall("asset", vaultAddres, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 				return rpc.NewMockEVMNodeRPCAddressResult(assetAddress), nil, nil
 			})
 

@@ -35,7 +35,7 @@ var _ = Describe("RPCDecimalsResolver", func() {
 				It("returns the correct decimals", func() {
 					tokenAddress := "0xfedE2dB34D22b46C2014Ba1d57fE31134012e1b2"
 
-					evmNode.RegisterFunctionCall("decimals", tokenAddress, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
+					evmNode.RegisterETHCallCall("decimals", tokenAddress, nil, func(_ string, _ []string) (rpc.MockEVMNodeRPCResult, *rpc.MockEVMNodeRPCError, error) {
 						return rpc.NewMockEVMNodeRPCNumericResult(big.NewInt(6)), nil, nil
 					})
 
