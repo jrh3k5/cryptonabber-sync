@@ -1,13 +1,17 @@
 package config
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
 	"gopkg.in/yaml.v3"
 )
+
+// TODO: add tests
 
 // AddressType is the type of an address
 type AddressType string
@@ -40,8 +44,13 @@ func FromFile(fileLocation string) (*SyncConfig, error) {
 		return nil, fmt.Errorf("failed to read file '%s': %w", fileLocation, err)
 	}
 
+	return FromYAML(bytes.NewBuffer(file))
+}
+
+// FromYAML builds a SyncConfig out of the contents of a YAML string.
+func FromYAML(reader io.Reader) (*SyncConfig, error) {
 	syncConfig := &SyncConfig{}
-	if unmarshalErr := yaml.Unmarshal(file, syncConfig); unmarshalErr != nil {
+	if unmarshalErr := yaml.NewDecoder(reader).Decode(&syncConfig); unmarshalErr != nil {
 		return nil, fmt.Errorf("failed to unmarshal configuration: %w", unmarshalErr)
 	}
 

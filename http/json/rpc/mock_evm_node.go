@@ -112,7 +112,7 @@ func StartMockEVMNode() *MockEVMNode {
 			var err error
 			functionResult, rpcError, err = handler(data[0:10], nil)
 			if err != nil {
-				return nil, fmt.Errorf("failed to handle function call for selector '%s': %w", &functionSelector, err)
+				return nil, fmt.Errorf("failed to handle function call for selector '%s': %w", functionSelector, err)
 			}
 		} else {
 			parameter := data[lengthFunctionSelector+lengthFunctionArgPadding:]
@@ -120,7 +120,7 @@ func StartMockEVMNode() *MockEVMNode {
 			var err error
 			functionResult, rpcError, err = handler(data[0:10], []string{parameter})
 			if err != nil {
-				return nil, fmt.Errorf("failed to handle function call for selector '%s': %w", &functionSelector, err)
+				return nil, fmt.Errorf("failed to handle function call for selector '%s': %w", functionSelector, err)
 			}
 		}
 

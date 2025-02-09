@@ -58,10 +58,10 @@ The configuration block for evaluating the balance of an ERC20 token looks like:
 ```
 - account_name: "<the name of the account in YNAB to be updated>"
   payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
   wallet_address: "<the address of the wallet that holds the ass
   address_type: "erc20"
   chain_name: "<the chain name of the RPC node to be used to read this token's information>"
-  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"et>"
   token_address: "<the address of the ERC20 asset>"
 ```
 
@@ -72,10 +72,10 @@ The configuration block for evaluating the balance of an ERC4626 vault token loo
 ```
 - account_name: "<the name of the account in YNAB to be updated>"
   payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
   wallet_address: "<the address of the wallet that holds the ass
   address_type: "erc4626"
   chain_name: "<the chain name of the RPC node to be used to read this token's information>"
-  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"et>"
   vault_address: "<the address of the ERC4626 vault asset>"
   balance_function: "<the optional name of the function to be called to get the wallet's balance of the vault asset; if not specified, defaults to balanceOf>"
 ```
@@ -87,10 +87,10 @@ The configuration block for evaluating the balance of an ERC20 wrapper token loo
 ```
 - account_name: "<the name of the account in YNAB to be updated>"
   payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
   wallet_address: "<the address of the wallet that holds the ass
   address_type: "erc20_wrapper"
   chain_name: "<the chain name of the RPC node to be used to read this token's information>"
-  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"et>"
   token_address: "<the address of the ERC20 wrapper asset>"
   base_token_address_function: "<the name of the function to be called to get the address of the asset wrapped by this token>"
 ```
