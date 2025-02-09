@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v3/http"
 )
 
 type Request struct {
@@ -18,16 +18,35 @@ type Request struct {
 }
 
 type Response struct {
-	ID      json.Number `json:"id"`
-	JSONRPC string      `json:"jsonrpc"`
-	Result  string      `json:"result"`
-	Error   struct {
-		Code    int64  `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
+	ID      json.Number   `json:"id"`
+	JSONRPC string        `json:"jsonrpc"`
+	Result  string        `json:"result"`
+	Error   ResponseError `json:"error"`
+}
+
+type ResponseError struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
+type RPCCallError struct {
+	Code    int64
+	Message string
+}
+
+func NewRPCCallError(code int64, message string) *RPCCallError {
+	return &RPCCallError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func (e *RPCCallError) Error() string {
+	return fmt.Sprintf("RPC error: code %d, message: '%s'", e.Code, e.Message)
 }
 
 // ExecuteRequest executes the given RPC request and handles error checking.
+// This can return RPCCallError if the RPC call returned an error in the JSON response.
 func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, rpcRequest *Request) (*Response, error) {
 	requestBodyBytes, err := json.Marshal(rpcRequest)
 	if err != nil {
@@ -58,7 +77,7 @@ func ExecuteRequest(ctx context.Context, doer synchttp.Doer, requestURL string, 
 	}
 
 	if result.Error.Code != 0 {
-		return nil, fmt.Errorf("RPC error: code %d, message: '%s'", result.Error.Code, result.Error.Message)
+		return nil, NewRPCCallError(result.Error.Code, result.Error.Message)
 	}
 
 	return result, nil

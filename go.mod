@@ -1,4 +1,4 @@
-module github.com/jrh3k5/cryptonabber-sync/v2
+module github.com/jrh3k5/cryptonabber-sync/v3
 
 go 1.23.0
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,15 +14,22 @@ import (
 	"time"
 
 	"github.com/davidsteinsland/ynab-go/ynab"
-	"github.com/jrh3k5/cryptonabber-sync/v2/coingecko"
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
-	"github.com/jrh3k5/cryptonabber-sync/v2/evm"
-	"github.com/jrh3k5/cryptonabber-sync/v2/token/balance"
+	"github.com/jrh3k5/cryptonabber-sync/v3/coingecko"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
+	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/evm"
+	"github.com/jrh3k5/cryptonabber-sync/v3/token"
+	"github.com/jrh3k5/cryptonabber-sync/v3/token/balance"
 	"github.com/jrh3k5/oauth-cli/pkg/auth"
 )
 
 func main() {
 	ctx := context.Background()
+
+	dryRun := dryRunEnabled()
+	if dryRun {
+		fmt.Println("Dry run is enabled; no writes will be made to YNAB")
+	}
 
 	oauthToken, err := auth.DefaultGetOAuthToken(ctx,
 		"https://app.ynab.com/oauth/authorize",
@@ -44,7 +52,9 @@ func main() {
 		// ??? how?
 		panic(fmt.Sprintf("unable to parse hard-coded YNAB URL: %v", err))
 	}
-	ynabClient := ynab.NewClient(ynabURL, http.DefaultClient, oauthToken.AccessToken)
+
+	httpClient := http.DefaultClient
+	ynabClient := ynab.NewClient(ynabURL, httpClient, oauthToken.AccessToken)
 
 	budget, err := getBudget(syncConfig.BudgetName, ynabClient)
 	if err != nil {
@@ -63,21 +73,96 @@ func main() {
 		panic("no accounts found in budget")
 	}
 
-	coingeckoQuoteResolver := coingecko.NewHTTPQuoteResolver(http.DefaultClient)
+	coingeckoQuoteResolver := coingecko.NewHTTPQuoteResolver(httpClient)
 	assetPlatformIDResolver := coingecko.NewSimpleAssetPlatformIDResolver()
+	rpcConfigurationResolver := rpcconfig.NewDefaultConfigurationResolver(syncConfig.RPCConfigurations)
+
+	erc20BalanceFetcher := balance.NewERC20Fetcher(rpcConfigurationResolver, httpClient)
+	erc4626BalanceFetcher := balance.NewERC4262Fetcher(rpcConfigurationResolver, httpClient)
+	erc20WrapperBalanceFetcher := balance.NewERC20WrapperFetcher(erc20BalanceFetcher)
+
+	erc20AssetResolver := token.NewERC20AssetResolver()
+	erc4626AssetResolver := token.NewERC4626AssetResolver(rpcConfigurationResolver, httpClient)
+	erc20WrapperAssetResolver := token.NewERC20WrapperAssetResolver(rpcConfigurationResolver, httpClient)
+
+	chainIDFetcher := evm.NewJSONRPCChainIDFetcher(rpcConfigurationResolver, httpClient)
+	decimalsResolver := token.NewRPCDecimalsResolver(rpcConfigurationResolver, httpClient)
 
 	accountChangeSummaries := make(map[string]*changeSummary)
 
-	for _, account := range syncConfig.Accounts {
-		tokenDecimals, err := account.GetTokenDecimals()
+	for accountIndex, account := range syncConfig.Accounts {
+		addressType, err := account.GetAddressType()
 		if err != nil {
-			panic(fmt.Sprintf("unable to fetch account's token decimals: %v", err))
+			panic(fmt.Sprintf("failed to resolve address type for account at index %d: %v", accountIndex, err))
+		}
+
+		var tokenAddress *string
+		var tokenBalance *big.Int
+		var syncableAccount config.SyncableAccount
+		var onchainAsset config.OnchainAsset
+		switch addressType {
+		case config.AddressTypeERC20:
+			erc20Account, err := account.AsERC20Account()
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve ERC20 account at index %d: %v", accountIndex, err))
+			}
+
+			tokenAddress, err = erc20AssetResolver.ResolveAssetAddress(ctx, erc20Account)
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve token address for ERC20 account '%s': %v", syncableAccount.AccountName, err))
+			}
+
+			tokenBalance, err = erc20BalanceFetcher.FetchBalance(ctx, erc20Account)
+			if err != nil {
+				panic(fmt.Sprintf("failed to retrieve balance of ERC20 token '%s' for address '%s': %v", erc20Account.TokenAddress, erc20Account.WalletAddress, err))
+			}
+
+			syncableAccount = erc20Account.SyncableAccount
+			onchainAsset = erc20Account.OnchainAsset
+		case config.AddressTypeERC4626:
+			erc4626Account, err := account.AsERC4626Account()
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve ERC4626 account at index %d: %v", accountIndex, err))
+			}
+
+			tokenAddress, err = erc4626AssetResolver.ResolveAssetAddress(ctx, erc4626Account)
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve token address for ERC4626 account '%s': %v", syncableAccount.AccountName, err))
+			}
+
+			tokenBalance, err = erc4626BalanceFetcher.FetchBalance(ctx, erc4626Account)
+			if err != nil {
+				panic(fmt.Sprintf("failed to retrieve balance of ERC4626 vault '%s' for address '%s': %v", erc4626Account.VaultAddress, erc4626Account.WalletAddress, err))
+			}
+
+			syncableAccount = erc4626Account.SyncableAccount
+			onchainAsset = erc4626Account.OnchainAsset
+		case config.AddressTypeERC20Wrapper:
+			erc20WrapperAccount, err := account.AsERC20WrapperAccount()
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve ERC20Wrapper account at index %d: %v", accountIndex, err))
+			}
+
+			tokenAddress, err = erc20WrapperAssetResolver.ResolveAssetAddress(ctx, erc20WrapperAccount)
+			if err != nil {
+				panic(fmt.Sprintf("failed to resolve token address for ERC20Wrapper account '%s': %v", syncableAccount.AccountName, err))
+			}
+
+			tokenBalance, err = erc20WrapperBalanceFetcher.FetchBalance(ctx, erc20WrapperAccount)
+			if err != nil {
+				panic(fmt.Sprintf("failed to retrieve balance of ERC20Wrapper token '%s' for address '%s': %v", erc20WrapperAccount.TokenAddress, erc20WrapperAccount.WalletAddress, err))
+			}
+
+			syncableAccount = erc20WrapperAccount.SyncableAccount
+			onchainAsset = erc20WrapperAccount.OnchainAsset
+		default:
+			panic(fmt.Sprintf("unsupported address type '%s' for account '%s'", addressType, syncableAccount.AccountName))
 		}
 
 		var categoryID string
 		for _, categoryGroup := range categoryGroups {
 			for _, category := range categoryGroup.Categories {
-				if category.Name == account.TransactionCategoryName {
+				if category.Name == syncableAccount.TransactionCategoryName {
 					categoryID = category.Id
 					break
 				}
@@ -85,71 +170,55 @@ func main() {
 		}
 
 		if categoryID == "" {
-			panic(fmt.Sprintf("No category '%s' found in budget for account '%s'", account.TransactionCategoryName, account.AccountName))
-		}
-
-		var balanceFetcher balance.Fetcher
-		switch account.GetAddressType() {
-		case config.AddressTypeERC20:
-			balanceFetcher = balance.NewERC20Fetcher(account.RPCURL, http.DefaultClient)
-		case config.AddressTypeStakewiseVault:
-			balanceFetcher = balance.NewStakewiseVaultFetcher(account.RPCURL, http.DefaultClient)
-		default:
-			panic(fmt.Sprintf("unhandled address type: %v", account.GetAddressType()))
-		}
-
-		tokenBalance, err := balanceFetcher.FetchBalance(ctx, account.TokenAddress, account.WalletAddress)
-		if err != nil {
-			panic(fmt.Sprintf("failed to retrieve balance of token '%s' for address '%s': %v", account.TokenAddress, account.WalletAddress, err))
+			panic(fmt.Sprintf("No category '%s' found in budget for account '%s'", syncableAccount.TransactionCategoryName, syncableAccount.AccountName))
 		}
 
 		var dollarRate int64
 		var centsRate float64
-		if account.HasQuote() {
+
+		chainID, chainIDErr := chainIDFetcher.GetChainID(ctx, onchainAsset.ChainName)
+		if chainIDErr != nil {
+			panic(fmt.Sprintf("failed to retrieve chain ID for account '%s': %v", syncableAccount.AccountName, chainIDErr))
+		}
+
+		assetPlatformID, assetPlatformIDErr := assetPlatformIDResolver.ResolveForChainID(ctx, chainID)
+		if assetPlatformIDErr != nil {
+			panic(fmt.Sprintf("failed to retrieve asset platform ID for account '%s': %v", syncableAccount.AccountName, assetPlatformIDErr))
+		}
+
+		if tokenAddress != nil {
+			var hasQuote bool
 			var quoteErr error
-			dollarRate, centsRate, _, quoteErr = account.GetQuote()
+			dollarRate, centsRate, hasQuote, quoteErr = coingeckoQuoteResolver.ResolveQuote(ctx, assetPlatformID, *tokenAddress)
 			if quoteErr != nil {
-				panic(fmt.Sprintf("failed to retrieve configured quote from account: %v", quoteErr))
+				panic(fmt.Sprintf("failed to get quote for token address '%s': %v", *tokenAddress, quoteErr))
+			} else if !hasQuote {
+				panic(fmt.Sprintf("unable to resolve a quote for token address '%s'; please configure one explicitly for the account", *tokenAddress))
 			}
 		} else {
-			chainID, chainIDErr := evm.NewJSONRPCChainIDFetcher(account.RPCURL, http.DefaultClient).GetChainID(ctx)
-			if chainIDErr != nil {
-				panic(fmt.Sprintf("failed to retrieve chain ID for account '%s': %v", account.AccountName, chainIDErr))
+			var quoteErr error
+			dollarRate, centsRate, quoteErr = coingeckoQuoteResolver.ResolveETHQuote(ctx)
+			if quoteErr != nil {
+				panic(fmt.Sprintf("unable to resolve quote for ETH: %v", quoteErr))
 			}
+		}
 
-			assetPlatformID, assetPlatformIDErr := assetPlatformIDResolver.ResolveForChainID(ctx, chainID)
-			if assetPlatformIDErr != nil {
-				panic(fmt.Sprintf("failed to retrieve asset platform ID for account '%s': %v", account.AccountName, assetPlatformIDErr))
-			}
-
-			switch account.GetAddressType() {
-			case config.AddressTypeERC20:
-				var hasQuote bool
-				var quoteErr error
-				dollarRate, centsRate, hasQuote, quoteErr = coingeckoQuoteResolver.ResolveQuote(ctx, assetPlatformID, account.TokenAddress)
-				if quoteErr != nil {
-					panic(fmt.Sprintf("failed to get quote for token address '%s': %v", account.TokenAddress, quoteErr))
-				} else if !hasQuote {
-					panic(fmt.Sprintf("unable to resolve a quote for token address '%s'; please configure one explicitly for the account", account.TokenAddress))
-				}
-			case config.AddressTypeStakewiseVault:
-				var quoteErr error
-				dollarRate, centsRate, quoteErr = coingeckoQuoteResolver.ResolveETHQuote(ctx)
-				if quoteErr != nil {
-					panic(fmt.Sprintf("unable to resolve quote for ETH: %v", quoteErr))
-				}
-			}
+		tokenDecimals, err := decimalsResolver.ResolveDecimals(ctx, onchainAsset, tokenAddress)
+		if err != nil {
+			panic(fmt.Sprintf("failed to resolve token decimals for account '%s': %v", syncableAccount.AccountName, err))
 		}
 
 		currentBalance := balance.AsFiat(tokenBalance, tokenDecimals, dollarRate, centsRate) * 10 // YNAB stores cents as hundreds, not tens
 
-		ynabAccount, err := getAccount(account.AccountName, accounts)
+		ynabAccount, err := getAccount(syncableAccount.AccountName, accounts)
 		if err != nil {
 			panic(fmt.Sprintf("failed to find account: %v", err))
 		}
 
 		if accountDiff := currentBalance - int64(ynabAccount.Balance); accountDiff != 0 {
-			updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
+			if !dryRun {
+				updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
+			}
 
 			accountDiffCents := accountDiff % 1000
 			accountDiffDollars := (accountDiff - accountDiffCents) / 1000
@@ -166,9 +235,28 @@ func main() {
 
 	fmt.Println("================")
 	fmt.Printf("Updated %d accounts:\n", len(accountChangeSummaries))
-	for accountName, changeSummary := range accountChangeSummaries {
-		fmt.Printf("  %s: $%d.%02d\n", accountName, changeSummary.dollars, changeSummary.cents)
+
+	accountNames := make([]string, 0, len(accountChangeSummaries))
+	for accountName := range accountChangeSummaries {
+		accountNames = append(accountNames, accountName)
 	}
+	sort.Strings(accountNames)
+
+	for _, accountName := range accountNames {
+		changeSummary, _ := accountChangeSummaries[accountName]
+		absCents := int(math.Abs(float64(changeSummary.cents)))
+		fmt.Printf("  %s: $%d.%02d\n", accountName, changeSummary.dollars, absCents)
+	}
+}
+
+func dryRunEnabled() bool {
+	for _, osArg := range os.Args {
+		if strings.HasPrefix(osArg, "--dry-run") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getAccount(desiredAccountName string, accounts []ynab.Account) (*ynab.Account, error) {

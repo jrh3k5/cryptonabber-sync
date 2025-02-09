@@ -24,6 +24,7 @@ You can either supply the OAuth credentials interactively by executing this appl
 
 You can provide the following optional arguments:
 
+* `--dry-run`: specify this if you would like this tool to calculate balances, but not actually persist them to YNAB
 * `--file`: by default, this application looks for a file called `config.yaml` in the local directory; if you would like to use a different filename or location, you can use this parameter to specify that
 
 ### Configuration
@@ -34,45 +35,66 @@ Your configuration file should have the following configuration:
 
 ```
 ynab_budget_name: "<the name of the budget for which accounts are to be updated>"
+rpc_configurations:
+  - rpc_url: "<the URL of the RPC node>"
+    chain_name: "<a shorthand reference for the RPC node; used in your YNAB account config, below>"
+    chain_type: "evm"
 ynab_accounts:
-  - account_name: "<the name of the account whose balance is to be updated>"
-    wallet_address: "<the address of the wallet whose token balance is to be used to update the balance of the account>"
-    token_address: "<the address of the token whose balance is to be calculated>"
-    token_decimals: <the decimals value of the token>
-    rpc_url: "<the URL of the node to be used to query for wallet balances>"
-    payee_name: "<the name of the payee to be entered into YNAB when the adjustment is made>"
-    transaction_category_name: "<the name of the budget category under which the transaction is to be classified>"
+  - <configuration varies; see below>
+```
+
+##### YNAB Account Configuration
+
+This tool supports the following types of assets to be evaluated:
+
+* **ERC20**: a standalone token that implements the ERC20 standard
+* **ERC4626 Vault**: a vault that implements the ERC4626 standard
+* **ERC20 Wrapper**: a wrapper token that, through a function on the contract, expresses what the underlying wrapped asset is
+
+###### ERC20 YNAB Account Configuration
+
+The configuration block for evaluating the balance of an ERC20 token looks like:
+
+```
+- account_name: "<the name of the account in YNAB to be updated>"
+  payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
+  wallet_address: "<the address of the wallet that holds the ass
+  address_type: "erc20"
+  chain_name: "<the chain name of the RPC node to be used to read this token's information>"
+  token_address: "<the address of the ERC20 asset>"
+```
+
+###### ERC4626 Vault YNAB Account Configuration
+
+The configuration block for evaluating the balance of an ERC4626 vault token looks like:
+
+```
+- account_name: "<the name of the account in YNAB to be updated>"
+  payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
+  wallet_address: "<the address of the wallet that holds the ass
+  address_type: "erc4626"
+  chain_name: "<the chain name of the RPC node to be used to read this token's information>"
+  vault_address: "<the address of the ERC4626 vault asset>"
+  balance_function: "<the optional name of the function to be called to get the wallet's balance of the vault asset; if not specified, defaults to balanceOf>"
+```
+
+###### ERC20 Wrapper YNAB Account Configuration
+
+The configuration block for evaluating the balance of an ERC20 wrapper token looks like:
+
+```
+- account_name: "<the name of the account in YNAB to be updated>"
+  payee_name: "<the payee name to be recorded in YNAB>"
+  transaction_category_name: "<the budget category under which the transaction is to be written in YNAB>"
+  wallet_address: "<the address of the wallet that holds the ass
+  address_type: "erc20_wrapper"
+  chain_name: "<the chain name of the RPC node to be used to read this token's information>"
+  token_address: "<the address of the ERC20 wrapper asset>"
+  base_token_address_function: "<the name of the function to be called to get the address of the asset wrapped by this token>"
 ```
 
 ##### Fiat Value Evaluation
 
-This tool currently only supports conversion of asset values into USD.
-
-By default, this tool attempts to resolve an asset's quote from Coingecko. However, your asset may not exist in Coingecko, or it may have the incorrect value. To remedy that, you can provide an optional `quote` value like so:
-
-```
-ynab_accounts:
-  - account_name: ...
-    quote: "1.25"
-```
-
-This will be the exchange rate used to determine the fiat value of the asset that is stored into YNAB.
-
-##### Token Type
-
-By default, all listed tokens are assumed to be ERC20 tokens. Their `balanceOf` methods will be used to determine the amount of token the wallet address has.
-
-However, not all onchain balances are ERC20 balances. This tool supports an optional `token_type` field on the configuration like so:
-
-```
-ynab_accounts:
-  - account_name: ...
-    address_type: "erc20"
-```
-
-The supported types are:
-
-* `erc20`: a token conforming to the ERC20 standard
-* `stakewise_vault`: a vault providing liquid staking options via Stakewise
-  * In this case, the `token_address` field should set to the contract address of the Vault's contract address - e.g., for the Gensis vault, use the address `0xAC0F906E433d58FA868F936E8A43230473652885`
-  * When this is used, then the resolved quote will be Ethereum's value. Decimals will be assumed to be 18 and do not need to be configured.
+This tool currently only supports conversion of asset values into USD. This tool attempts to resolve an asset's quote from Coingecko using the asset's address (or the address of the underlying asset, for cases such as vaults or wrapping tokens).

@@ -21,20 +21,16 @@ func NewSimpleAssetPlatformIDResolver() *SimpleAssetPlatformIDResolver {
 }
 
 func (*SimpleAssetPlatformIDResolver) ResolveForChainID(ctx context.Context, chainID *big.Int) (string, error) {
-	if !chainID.IsInt64() {
-		return "", fmt.Errorf("unsupported value type for chain ID: %v", chainID)
-	}
-
-	switch chainID.Int64() {
-	case 1:
+	switch chainID.Text(10) {
+	case "1":
 		return "ethereum", nil
-	case 137:
+	case "137":
 		return "polygon-pos", nil
-	case 8453:
+	case "8453":
 		return "base", nil
-	case 42161:
+	case "42161":
 		return "arbitrum-one", nil
-	case 43114:
+	case "43114":
 		return "avalanche", nil
 	}
 

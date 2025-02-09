@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
-	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
-	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/chain"
+	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v3/http"
+	"github.com/jrh3k5/cryptonabber-sync/v3/http/json/rpc"
 )
 
 // ChainIDFetcher describes a means of retrieving a chain ID.
@@ -18,25 +20,34 @@ type ChainIDFetcher interface {
 // JSONRPCChainIDFetcher is a ChainIDFetcher that uses JSON RPC calls
 // to determine it.
 type JSONRPCChainIDFetcher struct {
-	nodeURL string
-	doer    synchttp.Doer
+	rpcConfigurationResolver rpcconfig.ConfigurationResolver
+	doer                     synchttp.Doer
 }
 
-func NewJSONRPCChainIDFetcher(nodeURL string, doer synchttp.Doer) *JSONRPCChainIDFetcher {
+func NewJSONRPCChainIDFetcher(rpcConfigurationResolver rpcconfig.ConfigurationResolver, doer synchttp.Doer) *JSONRPCChainIDFetcher {
 	return &JSONRPCChainIDFetcher{
-		nodeURL: nodeURL,
-		doer:    doer,
+		rpcConfigurationResolver: rpcConfigurationResolver,
+		doer:                     doer,
 	}
 }
 
-func (j *JSONRPCChainIDFetcher) GetChainID(ctx context.Context) (*big.Int, error) {
+func (j *JSONRPCChainIDFetcher) GetChainID(ctx context.Context, chainName string) (*big.Int, error) {
+	rpcConfiguration, hasURL, err := j.rpcConfigurationResolver.ResolveConfiguration(ctx, chainName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve RPC URL: %w", err)
+	} else if !hasURL {
+		return nil, fmt.Errorf("no RPC URL found for chain '%s'", chainName)
+	} else if rpcConfiguration.ChainType != chain.TypeEVM {
+		return nil, fmt.Errorf("invalid chain type for chain '%s': %s", chainName, rpcConfiguration.ChainType)
+	}
+
 	rpcRequest := &rpc.Request{
 		ID:      1,
 		JSONRPC: "2.0",
 		Method:  "eth_chainId",
 	}
 
-	rpcResponse, err := rpc.ExecuteRequest(ctx, j.doer, j.nodeURL, rpcRequest)
+	rpcResponse, err := rpc.ExecuteRequest(ctx, j.doer, rpcConfiguration.RPCURL, rpcRequest)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute eth_chainId: %w", err)
 	}
