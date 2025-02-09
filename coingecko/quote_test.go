@@ -7,7 +7,7 @@ import (
 	"regexp"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/jrh3k5/cryptonabber-sync/v2/coingecko"
+	"github.com/jrh3k5/cryptonabber-sync/v3/coingecko"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

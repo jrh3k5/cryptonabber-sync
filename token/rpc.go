@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
-	"github.com/jrh3k5/cryptonabber-sync/v2/config/chain"
-	"github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/chain"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
 )
 
 // ResolveRPCURL resolves the RPC URL for the given chain name.

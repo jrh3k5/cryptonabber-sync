@@ -1,6 +1,6 @@
 package rpc
 
-import "github.com/jrh3k5/cryptonabber-sync/v2/config/chain"
+import "github.com/jrh3k5/cryptonabber-sync/v3/config/chain"
 
 // Configuration describes how to communciate with an RPC node.
 type Configuration struct {

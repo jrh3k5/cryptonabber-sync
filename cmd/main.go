@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/davidsteinsland/ynab-go/ynab"
-	"github.com/jrh3k5/cryptonabber-sync/v2/coingecko"
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
-	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
-	"github.com/jrh3k5/cryptonabber-sync/v2/evm"
-	"github.com/jrh3k5/cryptonabber-sync/v2/token"
-	"github.com/jrh3k5/cryptonabber-sync/v2/token/balance"
+	"github.com/jrh3k5/cryptonabber-sync/v3/coingecko"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
+	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/evm"
+	"github.com/jrh3k5/cryptonabber-sync/v3/token"
+	"github.com/jrh3k5/cryptonabber-sync/v3/token/balance"
 	"github.com/jrh3k5/oauth-cli/pkg/auth"
 )
 

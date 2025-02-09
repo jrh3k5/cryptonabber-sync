@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
 	"gopkg.in/yaml.v3"
 )
 

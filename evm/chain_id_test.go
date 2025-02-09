@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"net/http"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/evm"
-	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/evm"
+	"github.com/jrh3k5/cryptonabber-sync/v3/http/json/rpc"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

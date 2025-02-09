@@ -4,7 +4,7 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
 )
 
 // ERC20WrapperFetcher is a Fetcher implementation for ERC20Wrapper chains.

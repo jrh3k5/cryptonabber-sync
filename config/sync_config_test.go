@@ -3,8 +3,8 @@ package config_test
 import (
 	"bytes"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
-	"github.com/jrh3k5/cryptonabber-sync/v2/config/chain"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/chain"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"

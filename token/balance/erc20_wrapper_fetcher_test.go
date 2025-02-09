@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
-	"github.com/jrh3k5/cryptonabber-sync/v2/token/balance"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
+	"github.com/jrh3k5/cryptonabber-sync/v3/token/balance"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

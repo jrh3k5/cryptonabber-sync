@@ -3,9 +3,9 @@ package token_test
 import (
 	"testing"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config/chain"
-	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v2/config/rpc"
-	"github.com/jrh3k5/cryptonabber-sync/v2/http/json/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config/chain"
+	rpcconfig "github.com/jrh3k5/cryptonabber-sync/v3/config/rpc"
+	"github.com/jrh3k5/cryptonabber-sync/v3/http/json/rpc"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

@@ -3,7 +3,7 @@ package token
 import (
 	"context"
 
-	"github.com/jrh3k5/cryptonabber-sync/v2/config"
+	"github.com/jrh3k5/cryptonabber-sync/v3/config"
 )
 
 type DecimalsResolver interface {

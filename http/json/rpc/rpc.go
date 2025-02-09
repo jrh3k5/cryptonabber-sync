@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	synchttp "github.com/jrh3k5/cryptonabber-sync/v2/http"
+	synchttp "github.com/jrh3k5/cryptonabber-sync/v3/http"
 )
 
 type EthCallArgument struct {
