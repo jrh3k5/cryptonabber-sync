@@ -69,7 +69,8 @@ var _ = Describe("Erc4626Fetcher", func() {
 				OnchainWallet: config.OnchainWallet{
 					WalletAddress: walletAddress,
 				},
-				VaultAddress: vaultAddress,
+				VaultAddress:        vaultAddress,
+				BalanceFunctionName: "getShares",
 			}
 
 			balance, err := fetcher.FetchBalance(ctx, erc4626Account)

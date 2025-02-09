@@ -31,7 +31,7 @@ func (e *ERC4262Fetcher) FetchBalance(ctx context.Context, onchainAccount *confi
 		return nil, fmt.Errorf("failed to resolve RPC URL: %w", err)
 	}
 
-	sharesResult, err := rpc.ExecuteEthCall(ctx, e.doer, rpcNodeURL, "getShares", onchainAccount.VaultAddress, rpc.Arg("address", onchainAccount.WalletAddress))
+	sharesResult, err := rpc.ExecuteEthCall(ctx, e.doer, rpcNodeURL, onchainAccount.BalanceFunctionName, onchainAccount.VaultAddress, rpc.Arg("address", onchainAccount.WalletAddress))
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute getShares: %w", err)
 	}

@@ -20,14 +20,17 @@ const (
 	AddressTypeERC4626      AddressType = "erc4626"       // describes an ERC4626 vault
 	AddressTypeERC20Wrapper AddressType = "erc20_wrapper" // describes an ERC20 wrapper
 
-	fieldAccountName             = "account_name"
-	fieldAddressType             = "address_type"
-	fieldBaseTokenAddresFunction = "base_token_address_function"
-	fieldPayeeName               = "payee_name"
-	fieldTokenAddress            = "token_address"
-	fieldTransactionCategoryName = "transaction_category_name"
-	fieldVaultAddress            = "vault_address"
-	fieldWalletAddress           = "wallet_address"
+	balanceFunctionDefault = "balanceOf"
+
+	fieldAccountName              = "account_name"
+	fieldAddressType              = "address_type"
+	fieldBalanceFunction          = "balance_function"
+	fieldBaseTokenAddressFunction = "base_token_address_function"
+	fieldPayeeName                = "payee_name"
+	fieldTokenAddress             = "token_address"
+	fieldTransactionCategoryName  = "transaction_category_name"
+	fieldVaultAddress             = "vault_address"
+	fieldWalletAddress            = "wallet_address"
 )
 
 // FromFile builds a SyncConfig out of the contents of a YAML file at the given location.
@@ -73,34 +76,7 @@ func (a AccountProperties) AsERC20Account() (*ERC20Account, error) {
 		return nil, fmt.Errorf("invalid address type: %s", addressType)
 	}
 
-	syncableAccount, err := a.asSyncableAccount()
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve syncable account: %w", err)
-	}
-
-	onchainWallet, err := a.asOnchainWallet()
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve onchain wallet: %w", err)
-	}
-
-	onChainAsset, err := a.asOnchainAsset()
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve onchain asset: %w", err)
-	}
-
-	tokenAddress, hasTokenAddress, err := a.stringProperty(fieldTokenAddress)
-	if err != nil {
-		return nil, fmt.Errorf("unable to resolve token address: %w", err)
-	} else if !hasTokenAddress {
-		return nil, errors.New("token address is required")
-	}
-
-	return &ERC20Account{
-		SyncableAccount: *syncableAccount,
-		OnchainWallet:   *onchainWallet,
-		OnchainAsset:    *onChainAsset,
-		TokenAddress:    tokenAddress,
-	}, nil
+	return a.toERC20AccountType()
 }
 
 // AsERC4626Account resolves the account properties into an ERC4626 account
@@ -134,11 +110,19 @@ func (a AccountProperties) AsERC4626Account() (*ERC4626Account, error) {
 		return nil, errors.New("vault address is required")
 	}
 
+	balanceFunction, hasBalanceFunction, err := a.stringProperty(fieldBalanceFunction)
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve balance function: %w", err)
+	} else if !hasBalanceFunction {
+		balanceFunction = balanceFunctionDefault
+	}
+
 	return &ERC4626Account{
-		SyncableAccount: *syncableAccount,
-		OnchainWallet:   *onchainWallet,
-		OnchainAsset:    *onchainAsset,
-		VaultAddress:    vaultAddress,
+		SyncableAccount:     *syncableAccount,
+		OnchainWallet:       *onchainWallet,
+		OnchainAsset:        *onchainAsset,
+		VaultAddress:        vaultAddress,
+		BalanceFunctionName: balanceFunction,
 	}, nil
 }
 
@@ -151,12 +135,12 @@ func (a AccountProperties) AsERC20WrapperAccount() (*ERC20WrapperAccount, error)
 		return nil, fmt.Errorf("invalid address type: %s", addressType)
 	}
 
-	erc20Account, err := a.AsERC20Account()
+	erc20Account, err := a.toERC20AccountType()
 	if err != nil {
 		return nil, fmt.Errorf("unable to resolve erc20 account: %w", err)
 	}
 
-	baseTokenAddressFunctionName, hasBaseTokenAddressFunctionName, err := a.stringProperty(fieldBaseTokenAddresFunction)
+	baseTokenAddressFunctionName, hasBaseTokenAddressFunctionName, err := a.stringProperty(fieldBaseTokenAddressFunction)
 	if err != nil {
 		return nil, fmt.Errorf("unable to resolve base token address function name: %w", err)
 	} else if !hasBaseTokenAddressFunctionName {
@@ -239,6 +223,39 @@ func (a AccountProperties) stringProperty(propertyName string) (string, bool, er
 	return propertyString, true, nil
 }
 
+// toERC20AccountType is an internal-only method to allow reuse of the ERC20 data model
+func (a AccountProperties) toERC20AccountType() (*ERC20Account, error) {
+
+	syncableAccount, err := a.asSyncableAccount()
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve syncable account: %w", err)
+	}
+
+	onchainWallet, err := a.asOnchainWallet()
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve onchain wallet: %w", err)
+	}
+
+	onChainAsset, err := a.asOnchainAsset()
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve onchain asset: %w", err)
+	}
+
+	tokenAddress, hasTokenAddress, err := a.stringProperty(fieldTokenAddress)
+	if err != nil {
+		return nil, fmt.Errorf("unable to resolve token address: %w", err)
+	} else if !hasTokenAddress {
+		return nil, errors.New("token address is required")
+	}
+
+	return &ERC20Account{
+		SyncableAccount: *syncableAccount,
+		OnchainWallet:   *onchainWallet,
+		OnchainAsset:    *onChainAsset,
+		TokenAddress:    tokenAddress,
+	}, nil
+}
+
 // OnchainAccount is a marker interface to declare when an instance of onchain account is needed
 type OnchainAccount interface {
 	isOnchainAccount()
@@ -277,7 +294,8 @@ type ERC4626Account struct {
 	OnchainAsset
 	OnchainWallet
 
-	VaultAddress string // the address of the ERC4626 vault
+	VaultAddress        string // the address of the ERC4626 vault
+	BalanceFunctionName string // the name of the function to be called in order to retrieve the wallet's balance of the vault asset (not the underlying asset)
 }
 
 func (*ERC4626Account) isOnchainAccount() {}

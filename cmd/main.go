@@ -26,6 +26,11 @@ import (
 func main() {
 	ctx := context.Background()
 
+	dryRun := dryRunEnabled()
+	if dryRun {
+		fmt.Println("Dry run is enabled; no writes will be made to YNAB")
+	}
+
 	oauthToken, err := auth.DefaultGetOAuthToken(ctx,
 		"https://app.ynab.com/oauth/authorize",
 		"https://api.ynab.com/oauth/token")
@@ -211,7 +216,9 @@ func main() {
 		}
 
 		if accountDiff := currentBalance - int64(ynabAccount.Balance); accountDiff != 0 {
-			updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
+			if !dryRun {
+				updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
+			}
 
 			accountDiffCents := accountDiff % 1000
 			accountDiffDollars := (accountDiff - accountDiffCents) / 1000
@@ -228,9 +235,28 @@ func main() {
 
 	fmt.Println("================")
 	fmt.Printf("Updated %d accounts:\n", len(accountChangeSummaries))
-	for accountName, changeSummary := range accountChangeSummaries {
-		fmt.Printf("  %s: $%d.%02d\n", accountName, changeSummary.dollars, changeSummary.cents)
+
+	accountNames := make([]string, 0, len(accountChangeSummaries))
+	for accountName := range accountChangeSummaries {
+		accountNames = append(accountNames, accountName)
 	}
+	sort.Strings(accountNames)
+
+	for _, accountName := range accountNames {
+		changeSummary, _ := accountChangeSummaries[accountName]
+		absCents := int(math.Abs(float64(changeSummary.cents)))
+		fmt.Printf("  %s: $%d.%02d\n", accountName, changeSummary.dollars, absCents)
+	}
+}
+
+func dryRunEnabled() bool {
+	for _, osArg := range os.Args {
+		if strings.HasPrefix(osArg, "--dry-run") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getAccount(desiredAccountName string, accounts []ynab.Account) (*ynab.Account, error) {
