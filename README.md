@@ -98,3 +98,9 @@ The configuration block for evaluating the balance of an ERC20 wrapper token loo
 ##### Fiat Value Evaluation
 
 This tool currently only supports conversion of asset values into USD. This tool attempts to resolve an asset's quote from Coingecko using the asset's address (or the address of the underlying asset, for cases such as vaults or wrapping tokens).
+
+## Privacy Policy
+
+This application does not persist any information given to this application. It only uses the access granted to your account within YNAB to update account balances within YNAB to reflect ochain balances using the configuration you provide to the tool.
+
+No data given to this application or read from YNAB is shared with any third parties.
