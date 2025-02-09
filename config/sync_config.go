@@ -247,10 +247,12 @@ type SyncableAccount struct {
 	TransactionCategoryName string // the name of the YNAB category under which the transaction is to be classified
 }
 
+// OnchainWallet describes a wallet that is onchain.
 type OnchainWallet struct {
 	WalletAddress string // the address to which the asset belongs onchain
 }
 
+// OnchainAsset is the descriptor of an asset's onchain presence.
 type OnchainAsset struct {
 	ChainName string // the name of the string on which the asset resides, corresponding to an RPC configuration's chain name
 }

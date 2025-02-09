@@ -16,6 +16,7 @@ const (
 	lengthFunctionArgPadding = 24
 )
 
+// MockEVMNodeCallHandler is a function that handles a function call.
 type MockEVMNodeCallHandler func(functionSelector string, params []string) (MockEVMNodeRPCResult, *MockEVMNodeRPCError, error)
 
 type MockEVMNode struct {
