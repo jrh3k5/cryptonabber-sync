@@ -368,7 +368,11 @@ type ERC4626BackingAsset struct {
 }
 
 func (e *ERC4626BackingAsset) String() string {
-	return fmt.Sprintf("ERC4626BackingAsset{ContractAddress: %s}", e.ContractAddress)
+	var safeContractAddress string
+	if contractAddress := e.ContractAddress; contractAddress != nil {
+		safeContractAddress = *contractAddress
+	}
+	return fmt.Sprintf("ERC4626BackingAsset{ContractAddress: %s}", safeContractAddress)
 }
 
 // ERC20WrapperAccount defines the properties needed to resolve the balance of an ERC20 wrapper
