@@ -60,4 +60,16 @@ var _ = Describe("ERC4626AssetResolver", func() {
 			Expect(address).To(BeNil(), "the asset address should be nil")
 		})
 	})
+
+	When("the account has no vault address", func() {
+		It("rejects the request", func() {
+			_, err := erc4626AssetResolver.ResolveAssetAddress(ctx, &config.ERC4626Account{
+				OnchainAsset: config.OnchainAsset{
+					ChainName: chainName,
+				},
+			})
+
+			Expect(err).To(MatchError(ContainSubstring("vault address must be provided on the given onchain account")), "the error should be about the missing vault address")
+		})
+	})
 })

@@ -11,8 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO: add tests
-
 // AddressType is the type of an address
 type AddressType string
 
@@ -276,14 +274,26 @@ type SyncableAccount struct {
 	TransactionCategoryName string // the name of the YNAB category under which the transaction is to be classified
 }
 
+func (s *SyncableAccount) String() string {
+	return fmt.Sprintf("SyncableAccount{AccountName: %s, PayeeName: %s, TransactionCategoryName: %s}", s.AccountName, s.PayeeName, s.TransactionCategoryName)
+}
+
 // OnchainWallet describes a wallet that is onchain.
 type OnchainWallet struct {
 	WalletAddress string // the address to which the asset belongs onchain
 }
 
+func (o *OnchainWallet) String() string {
+	return fmt.Sprintf("OnchainWallet{WalletAddress: %s}", o.WalletAddress)
+}
+
 // OnchainAsset is the descriptor of an asset's onchain presence.
 type OnchainAsset struct {
 	ChainName string // the name of the string on which the asset resides, corresponding to an RPC configuration's chain name
+}
+
+func (o *OnchainAsset) String() string {
+	return fmt.Sprintf("OnchainAsset{ChainName: %s}", o.ChainName)
 }
 
 // ERC20Account defines the properties needed to resolve the balance of an ERC20 token
@@ -297,6 +307,10 @@ type ERC20Account struct {
 
 func (*ERC20Account) isOnchainAccount() {}
 
+func (e *ERC20Account) String() string {
+	return fmt.Sprintf("ERC20Account{SyncableAccount: %s, OnchainAsset: %s, OnchainWallet: %s, TokenAddress: %s}", &e.SyncableAccount, &e.OnchainAsset, &e.OnchainWallet, e.TokenAddress)
+}
+
 // ERC4626Account defines the properties needed to resolve the balance of an ERC4626 vault
 type ERC4626Account struct {
 	SyncableAccount
@@ -309,6 +323,10 @@ type ERC4626Account struct {
 
 func (*ERC4626Account) isOnchainAccount() {}
 
+func (e *ERC4626Account) String() string {
+	return fmt.Sprintf("ERC4626Account{SyncableAccount: %s, OnchainAsset: %s, OnchainWallet: %s, VaultAddress: %s, BalanceFunctionName: %s}", &e.SyncableAccount, &e.OnchainAsset, &e.OnchainWallet, e.VaultAddress, e.BalanceFunctionName)
+}
+
 // ERC20WrapperAccount defines the properties needed to resolve the balance of an ERC20 wrapper
 type ERC20WrapperAccount struct {
 	ERC20Account
@@ -317,3 +335,7 @@ type ERC20WrapperAccount struct {
 }
 
 func (*ERC20WrapperAccount) isOnchainAccount() {}
+
+func (e *ERC20WrapperAccount) String() string {
+	return fmt.Sprintf("ERC20WrapperAccount{ERC20Account: %s, BaseTokenAddressFunction: %s}", &e.ERC20Account, e.BaseTokenAddressFunction)
+}

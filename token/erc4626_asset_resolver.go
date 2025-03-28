@@ -26,6 +26,10 @@ func NewERC4626AssetResolver(rpcConfigurationResolver rpcconfig.ConfigurationRes
 }
 
 func (r *ERC4626AssetResolver) ResolveAssetAddress(ctx context.Context, onchainAccount *config.ERC4626Account) (*string, error) {
+	if onchainAccount.VaultAddress == "" {
+		return nil, errors.New("vault address must be provided on the given onchain account")
+	}
+
 	nodeURL, err := ResolveRPCURL(ctx, r.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve node URL for asset %s: %w", onchainAccount.OnchainAsset, err)
