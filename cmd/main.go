@@ -217,7 +217,7 @@ func main() {
 
 		if accountDiff := currentBalance - int64(ynabAccount.Balance); accountDiff != 0 {
 			if !dryRun {
-				updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
+				updateAccount(ynabClient, budget.Id, ynabAccount.Id, categoryID, syncableAccount.PayeeName, tokenBalance.Int64(), tokenDecimals, dollarRate, centsRate, accountDiff)
 			}
 
 			accountDiffCents := accountDiff % 1000
@@ -304,7 +304,7 @@ func getConfigFile() string {
 	return "config.yaml"
 }
 
-func updateAccount(client *ynab.Client, budgetID string, accountID string, categoryID string, tokenBalance int64, tokenDecimals int, dollarRate int64, centsRate float64, deltaDecicents int64) error {
+func updateAccount(client *ynab.Client, budgetID string, accountID string, categoryID string, payeeName string, tokenBalance int64, tokenDecimals int, dollarRate int64, centsRate float64, deltaDecicents int64) error {
 	dateString := time.Now().Format("2006-01-02")
 
 	tokenFractions := tokenBalance % int64(math.Pow10(tokenDecimals))
@@ -317,7 +317,7 @@ func updateAccount(client *ynab.Client, budgetID string, accountID string, categ
 		AccountId:  accountID,
 		Date:       dateString,
 		Amount:     int(deltaDecicents),
-		PayeeName:  "Balance Adjustment",
+		PayeeName:  payeeName,
 		CategoryId: categoryID,
 		Memo:       fmt.Sprintf("%s @ %s (executed %v)", formattedTokenBalance, formattedRate, formattedTime),
 	})
