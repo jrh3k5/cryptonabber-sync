@@ -26,8 +26,10 @@ const (
 
 	fieldAccountName              = "account_name"
 	fieldAddressType              = "address_type"
+	fieldBackingAsset             = "backing_asset"
 	fieldBalanceFunction          = "balance_function"
 	fieldBaseTokenAddressFunction = "base_token_address_function"
+	fieldContractAddress          = "contract_address"
 	fieldPayeeName                = "payee_name"
 	fieldTokenAddress             = "token_address"
 	fieldTransactionCategoryName  = "transaction_category_name"
@@ -124,12 +126,39 @@ func (a AccountProperties) AsERC4626Account() (*ERC4626Account, error) {
 		balanceFunction = balanceFunctionDefault
 	}
 
+	var backingAsset *ERC4626BackingAsset
+	if a.hasProperty(fieldBackingAsset) {
+		backingAssetAny := a[fieldBackingAsset]
+		backingAssetMap, isMap := backingAssetAny.(AccountProperties)
+
+		if !isMap {
+			return nil, fmt.Errorf("backing asset must be an AccountProperties, but is of type %T", backingAssetAny)
+		}
+
+		backingAsset = &ERC4626BackingAsset{}
+
+		contractAddressAny, hasContractAddress := backingAssetMap[fieldContractAddress]
+		if !hasContractAddress {
+			return nil, fmt.Errorf("backing asset contract address is required")
+		}
+
+		contractAddressString, isString := contractAddressAny.(string)
+		if !isString {
+			return nil, fmt.Errorf("backing asset contract address must be a string")
+		}
+
+		if contractAddressString != "" {
+			backingAsset.ContractAddress = &contractAddressString
+		}
+	}
+
 	return &ERC4626Account{
 		SyncableAccount:     *syncableAccount,
 		OnchainWallet:       *onchainWallet,
 		OnchainAsset:        *onchainAsset,
 		VaultAddress:        vaultAddress,
 		BalanceFunctionName: balanceFunction,
+		BackingAsset:        backingAsset,
 	}, nil
 }
 
@@ -216,15 +245,20 @@ func (a AccountProperties) asOnchainWallet() (*OnchainWallet, error) {
 	}, nil
 }
 
+func (a AccountProperties) hasProperty(propertyName string) bool {
+	_, hasProperty := a[propertyName]
+	return hasProperty
+}
+
 func (a AccountProperties) stringProperty(propertyName string) (string, bool, error) {
-	propetyAny, hasProperty := a[propertyName]
+	propertyAny, hasProperty := a[propertyName]
 	if !hasProperty {
 		return "", false, nil
 	}
 
-	propertyString, isString := propetyAny.(string)
+	propertyString, isString := propertyAny.(string)
 	if !isString {
-		return "", false, fmt.Errorf("invalid property type for '%s': %v", propertyName, propetyAny)
+		return "", false, fmt.Errorf("invalid property type for '%s': %v", propertyName, propertyAny)
 	}
 
 	return propertyString, true, nil
@@ -319,12 +353,22 @@ type ERC4626Account struct {
 
 	VaultAddress        string // the address of the ERC4626 vault
 	BalanceFunctionName string // the name of the function to be called in order to retrieve the wallet's balance of the vault asset (not the underlying asset)
+	BackingAsset        *ERC4626BackingAsset
 }
 
 func (*ERC4626Account) isOnchainAccount() {}
 
 func (e *ERC4626Account) String() string {
 	return fmt.Sprintf("ERC4626Account{SyncableAccount: %s, OnchainAsset: %s, OnchainWallet: %s, VaultAddress: %s, BalanceFunctionName: %s}", &e.SyncableAccount, &e.OnchainAsset, &e.OnchainWallet, e.VaultAddress, e.BalanceFunctionName)
+}
+
+// ERC4626BackingAsset defines the asset backing the contents of the vault.
+type ERC4626BackingAsset struct {
+	ContractAddress *string // the address of the contract that is backing the vault
+}
+
+func (e *ERC4626BackingAsset) String() string {
+	return fmt.Sprintf("ERC4626BackingAsset{ContractAddress: %s}", e.ContractAddress)
 }
 
 // ERC20WrapperAccount defines the properties needed to resolve the balance of an ERC20 wrapper
