@@ -127,7 +127,7 @@ func main() {
 
 			tokenAddress, err = erc4626AssetResolver.ResolveAssetAddress(ctx, erc4626Account)
 			if err != nil {
-				panic(fmt.Sprintf("failed to resolve token address for ERC4626 account '%s': %v", syncableAccount.AccountName, err))
+				panic(fmt.Sprintf("failed to resolve token address for ERC4626 account '%s' with vault address '%s': %v", erc4626Account.AccountName, erc4626Account.VaultAddress, err))
 			}
 
 			tokenBalance, err = erc4626BalanceFetcher.FetchBalance(ctx, erc4626Account)

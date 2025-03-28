@@ -26,6 +26,18 @@ func NewERC4626AssetResolver(rpcConfigurationResolver rpcconfig.ConfigurationRes
 }
 
 func (r *ERC4626AssetResolver) ResolveAssetAddress(ctx context.Context, onchainAccount *config.ERC4626Account) (*string, error) {
+	if onchainAccount == nil {
+		return nil, errors.New("onchain account must be provided")
+	}
+
+	if backingAsset := onchainAccount.BackingAsset; backingAsset != nil {
+		return backingAsset.ContractAddress, nil
+	}
+
+	if onchainAccount.VaultAddress == "" {
+		return nil, errors.New("vault address must be provided on the given onchain account")
+	}
+
 	nodeURL, err := ResolveRPCURL(ctx, r.rpcConfigurationResolver, onchainAccount.OnchainAsset, chain.TypeEVM)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve node URL for asset %s: %w", onchainAccount.OnchainAsset, err)
@@ -33,14 +45,7 @@ func (r *ERC4626AssetResolver) ResolveAssetAddress(ctx context.Context, onchainA
 
 	assetAddress, err := rpc.ExecuteEthCall(ctx, r.doer, nodeURL, "asset", onchainAccount.VaultAddress)
 	if err != nil {
-		var rpcError *rpc.RPCCallError
-		if errors.As(err, &rpcError) {
-			// this means that the vault has no asset function; it is assumed to represent an asset with no contract address, such as ETH
-			if rpcError.Code == -32000 {
-				return nil, nil
-			}
-		}
-		return nil, err
+		return nil, fmt.Errorf("failed to resolve asset for ERC4626 account: %w", err)
 	}
 
 	substringAddress := strings.ReplaceAll(assetAddress, "000000000000000000000000", "")

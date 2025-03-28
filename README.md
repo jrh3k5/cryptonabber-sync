@@ -77,7 +77,15 @@ The configuration block for evaluating the balance of an ERC4626 vault token loo
   address_type: "erc4626"
   chain_name: "<the chain name of the RPC node to be used to read this token's information>"
   vault_address: "<the address of the ERC4626 vault asset>"
-  balance_function: "<the optional name of the function to be called to get the wallet's balance of the vault asset; if not specified, defaults to balanceOf>"
+```
+
+You can also provide the following optional fields:
+
+* `balance_function`: the optional name of the function to be called to get the wallet's balance of the vault asset; if not specified, the application will call `balanceOf`
+* `backing_asset`: by default, the applicaiton will try to call `asset` on the given vault address to determine the underlying asset; however, you can specify a `backing_asset` element like so to describe what asset is backing the vault; for assets without a contract address, such as Ether on Ethereum, the `contract_address` field should be set to `""`:
+```
+backing_asset:
+  contract_address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 ```
 
 ###### ERC20 Wrapper YNAB Account Configuration
