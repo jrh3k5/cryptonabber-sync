@@ -2,11 +2,11 @@ module github.com/jrh3k5/cryptonabber-sync/v3
 
 go 1.23.0
 
-toolchain go1.23.3
+toolchain go1.24.1
 
 require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
-	github.com/ethereum/go-ethereum v1.15.5
+	github.com/ethereum/go-ethereum v1.15.6
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jrh3k5/oauth-cli v1.0.1
 	github.com/onsi/ginkgo/v2 v2.23.3
