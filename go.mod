@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
-	github.com/ethereum/go-ethereum v1.15.10
+	github.com/ethereum/go-ethereum v1.16.0
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/jrh3k5/oauth-cli v1.0.1
 	github.com/onsi/ginkgo/v2 v2.23.4
