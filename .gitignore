@@ -25,3 +25,8 @@ config.yaml
 
 # Ignore distribution artifacts
 dist
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+*.iml
