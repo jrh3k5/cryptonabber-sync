@@ -10,7 +10,7 @@ require (
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/jrh3k5/oauth-cli v1.0.1
 	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.3
+	github.com/onsi/gomega v1.39.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
