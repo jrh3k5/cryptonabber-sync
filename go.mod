@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/davidsteinsland/ynab-go v0.0.0-20180509062024-abfe6d465a99
-	github.com/ethereum/go-ethereum v1.16.8
+	github.com/ethereum/go-ethereum v1.17.0
 	github.com/jarcoal/httpmock v1.4.1
 	github.com/jrh3k5/oauth-cli v1.0.1
 	github.com/onsi/ginkgo/v2 v2.28.1
@@ -29,7 +29,6 @@ require (
 	github.com/manifoldco/promptui v0.9.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
