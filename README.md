@@ -1,3 +1,5 @@
+This project has been [migrated to Codeberg](https://codeberg.org/jrh3k5/cryptonabber-sync).
+
 # cryptonabber-sync
 A utility used to synchronize YNAB account balances to token balances
 
